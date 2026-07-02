@@ -1,0 +1,6 @@
+export const AGENCY_NAME = 'Sozero'
+export const AGENCY_DOMAIN = 'sozero.co.uk'
+export const AGENCY_EMAIL = 'hello@sozero.co.uk'
+export const AGENCY_CTA_NAV = 'Book a check-up call'
+export const AGENCY_CTA_BODY = 'Book a check-up call'
+export const AGENCY_CTA_SUBJECT = 'Website check-up'

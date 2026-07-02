@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-ink:        #14100D;
+  --color-ink-soft:   #2A2420;
+  --color-stone:      #EDE7DD;
+  --color-stone-line: #DAD2C2;
+  --color-orange:     #FF5C28;
+  --color-orange-dim: #8A3517;
+  --color-good:       #1F7A43;
+  --color-good-bg:    #E4F3EA;
+  --color-warn:       #A66B14;
+  --color-warn-bg:    #FBF0DD;
+  --color-bad:        #C13030;
+  --color-bad-bg:     #FBE7E7;
+}
+
+/* Brand tokens + font aliases as CSS custom properties */
+:root {
+  /* Fonts — values come from Next.js font injection on <body> class */
+  --font-space: var(--font-space, 'Space Grotesk', sans-serif);
+  --font-mono:  var(--font-mono,  'JetBrains Mono', monospace);
+
+  --ink:        #14100D;
+  --ink-soft:   #2A2420;
+  --stone:      #EDE7DD;
+  --stone-line: #DAD2C2;
+  --orange:     #FF5C28;
+  --orange-dim: #8A3517;
+  --good:       #1F7A43;
+  --good-bg:    #E4F3EA;
+  --warn:       #A66B14;
+  --warn-bg:    #FBF0DD;
+  --bad:        #C13030;
+  --bad-bg:     #FBE7E7;
+  --max:        1120px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { transition: none !important; opacity: 1 !important; transform: none !important; }
+}
+
+body {
+  background: var(--stone);
+  color: var(--ink);
+  font-family: var(--font-newsreader), 'Newsreader', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 28px; }
+
+a { color: inherit; }
+
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
