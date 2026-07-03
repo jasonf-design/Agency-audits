@@ -48,7 +48,9 @@ export default function AdminGeneratePage() {
   const [result, setResult]     = useState<AuditResult | null>(null)
   const [error, setError]       = useState<string | null>(null)
   const [copied, setCopied]     = useState(false)
+  const [pageReady, setPageReady] = useState(false)
   const textareaRef             = useRef<HTMLTextAreaElement>(null)
+  const pollRef                 = useRef<ReturnType<typeof setInterval> | null>(null)
 
   function slugify(n: string) {
     return n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -72,6 +74,21 @@ export default function AdminGeneratePage() {
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       const data: AuditResult = await res.json()
       setResult(data)
+      setPageReady(false)
+      // Poll every 5s until Vercel's rebuild is done and the page returns 200
+      if (data.published && data.publishedUrl) {
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(async () => {
+          try {
+            const check = await fetch(`/api/check-page?url=${encodeURIComponent(data.publishedUrl!)}`)
+            const { ready } = await check.json()
+            if (ready) {
+              setPageReady(true)
+              clearInterval(pollRef.current!)
+            }
+          } catch { /* still building */ }
+        }, 5000)
+      }
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -288,35 +305,39 @@ export default function AdminGeneratePage() {
             {/* Published confirmation */}
             {result.published && result.publishedUrl ? (
               <div style={{ background: 'var(--good)', borderRadius: 14, padding: 28, textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>✓</div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>{pageReady ? '✓' : '⏳'}</div>
                 <h2 style={{ fontFamily: 'var(--font-space)', fontWeight: 700, fontSize: 22, color: '#fff', marginBottom: 10 }}>
-                  Report published
+                  {pageReady ? 'Report live' : 'Building…'}
                 </h2>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 20 }}>
-                  Report sent to Vercel — wait about 60 seconds then click the link below:
+                  {pageReady
+                    ? 'Your report is ready. Click below to open it.'
+                    : 'Vercel is rebuilding — the button will appear automatically when it\'s live.'}
                 </p>
-                <a
-                  href={result.publishedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-block',
-                    background: '#fff',
-                    color: 'var(--good)',
-                    fontFamily: 'var(--font-space)',
-                    fontWeight: 700,
-                    fontSize: 15,
-                    padding: '14px 28px',
-                    borderRadius: 100,
-                    textDecoration: 'none',
-                    marginBottom: 16,
-                  }}
-                >
-                  Open report →
-                </a>
-                {result.alreadyExisted && (
+                {pageReady && (
+                  <a
+                    href={result.publishedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      background: '#fff',
+                      color: 'var(--good)',
+                      fontFamily: 'var(--font-space)',
+                      fontWeight: 700,
+                      fontSize: 15,
+                      padding: '14px 28px',
+                      borderRadius: 100,
+                      textDecoration: 'none',
+                      marginBottom: 16,
+                    }}
+                  >
+                    Open report →
+                  </a>
+                )}
+                {result.alreadyExisted && pageReady && (
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
-                    Note: this client already existed — the report was updated, not created fresh.
+                    This client already existed — the report was updated in place.
                   </p>
                 )}
               </div>
