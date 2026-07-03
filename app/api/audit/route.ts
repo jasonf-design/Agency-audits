@@ -30,7 +30,7 @@ function formatVitalValue(value: number | undefined, metric: string): string {
 
 async function runPageSpeed(url: string, apiKey: string) {
   const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&key=${apiKey}`
-  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(40000) })
+  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(90000) })
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`PageSpeed API ${res.status}: ${text.slice(0, 200)}`)
