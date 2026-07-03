@@ -303,15 +303,11 @@ export async function GET(request: NextRequest) {
     ai, lighthouse, coreVitals, coreVitalsPass, techStack,
   })
 
-  // What still needs a human
+  // What still needs a human (keep this list empty if fully automated)
   const manualTodos: string[] = []
   if (!ai) {
-    manualTodos.push('All narrative fields — AI generation failed or API key not set')
-  } else {
-    if (ai.heroMeta.some((m) => m.primary.startsWith('TODO'))) manualTodos.push('heroMeta — address or trading-since not found on the website, fill in manually')
-    if (!ai.reviewRating) manualTodos.push('Reputation grade — check Google Maps for review rating and count, then update reportCard')
+    manualTodos.push('AI generation failed — narrative fields are placeholders. Check ANTHROPIC_API_KEY is set in Vercel env vars.')
   }
-  manualTodos.push('Lead capture count — visit the site and confirm booking/chatbot/form actually works (auto-detected but worth a human check)')
 
   // Publish to GitHub (triggers Vercel redeploy automatically)
   const publishResult = await publishClient(slug, dataFileContent, name)
@@ -319,8 +315,11 @@ export async function GET(request: NextRequest) {
     errors.push(`GitHub publish failed: ${publishResult.error}`)
   }
 
-  const vercelUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}/clients/${slug}`
+  // VERCEL_PROJECT_PRODUCTION_URL is the stable production hostname (e.g. agency-audits.vercel.app).
+  // VERCEL_URL is deployment-specific and won't have the new page until the triggered rebuild completes.
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL
+  const vercelUrl = productionHost
+    ? `https://${productionHost}/clients/${slug}`
     : `http://localhost:3000/clients/${slug}`
 
   return NextResponse.json({

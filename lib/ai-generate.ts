@@ -196,9 +196,9 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
   },
   "heroSubheading": "2 sentences max. Mention the business name, what we did (ran the website through Google diagnostics), and the key tension (great reputation/presence but the website isn't converting it). If we found reviews, mention the rating and count.",
   "heroMeta": [
-    { "primary": "address if found, else 'TODO: address'", "secondary": "Trading since XXXX if found in page text, else 'TODO: trading since'" },
-    { "primary": "any notable credential or specialty found (e.g. Invisalign Provider, Implant Centre), else 'TODO: credential'", "secondary": "descriptor" },
-    { "primary": "X of 3", "secondary": "Booking, chatbot, contact form live" }
+    { "primary": "full address from structured data or body text if found; if only city/town is inferable use that (e.g. 'Nottingham'); if nothing found use the domain name as a location hint (e.g. 'Leicester' from leicesterdental.co.uk)", "secondary": "Trading since XXXX if found anywhere on the page; if not found use 'Est. locally'" },
+    { "primary": "the most notable credential or specialty found on the site (e.g. 'Invisalign Provider', 'Implant Centre', 'NHS & Private'); if nothing specific found use 'General & Cosmetic Dentistry'", "secondary": "short descriptor e.g. 'Award-winning care' or 'Family & emergency'" },
+    { "primary": "${leadCaptureCount} of 3", "secondary": "Booking, chatbot, contact form live" }
   ],
   "lighthouseNotes": {
     "performance": "One sentence explaining what's causing the low score, specific to this site's data.",
@@ -247,6 +247,7 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
 }
 
 Guidelines:
+- NEVER output "TODO:" or placeholder text. This JSON goes directly onto the live report. Every field must be a real, polished sentence or value.
 - Write as if presenting this to the dentist in person. Confident, specific, not salesy.
 - Use the actual numbers from the data — don't make up scores.
 - diagnosisFindings: write 3–5 findings. Base them on the top opportunities and any obvious issues from the scores. Stat should be the most impactful number.

@@ -268,20 +268,22 @@ export default function AdminGeneratePage() {
               </div>
             )}
 
-            {/* Manual TODOs */}
-            <div style={{ background: 'var(--warn-bg)', border: '1px solid #e8cf9d', borderRadius: 14, padding: 24 }}>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--warn)', marginBottom: 14 }}>
-                Still needs a human before the report can go live
-              </p>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {result.manualTodos.map((t, i) => (
-                  <li key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#7a5a13', paddingLeft: 20, position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: 0 }}>•</span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Manual TODOs — only shown if automation failed */}
+            {result.manualTodos.length > 0 && (
+              <div style={{ background: 'var(--warn-bg)', border: '1px solid #e8cf9d', borderRadius: 14, padding: 24 }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--warn)', marginBottom: 14 }}>
+                  Action needed before the report is live
+                </p>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {result.manualTodos.map((t, i) => (
+                    <li key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#7a5a13', paddingLeft: 20, position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 0 }}>•</span>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Published confirmation */}
             {result.published && result.publishedUrl ? (
@@ -291,7 +293,7 @@ export default function AdminGeneratePage() {
                   Report published
                 </h2>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 20 }}>
-                  Vercel is building now — your report will be live at this link in about 30 seconds:
+                  Report sent to Vercel — wait about 60 seconds then click the link below:
                 </p>
                 <a
                   href={result.publishedUrl}
