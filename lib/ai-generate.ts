@@ -124,7 +124,7 @@ export interface AIGeneratedContent {
 export async function generateReportContent(params: {
   businessName:     string
   url:              string
-  site:             ScrapedSite
+  site:             ScrapedSite | null
   lighthouse:       { performance: number; accessibility: number; bestPractices: number; seo: number } | null
   coreVitals:       CoreVital[] | null
   coreVitalsPass:   boolean | null
@@ -138,8 +138,9 @@ export async function generateReportContent(params: {
 
   const domain = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
-  const reviewRating = site.reviewRating
-  const reviewCount  = site.reviewCount
+  const reviewRating = site?.reviewRating ?? null
+  const reviewCount  = site?.reviewCount ?? null
+  const leadCaptureCount = site?.leadCaptureCount ?? 0
 
   // Compute grades
   const perfGrade = lh ? lighthouseGrade(lh.performance)   : 'F'
@@ -148,7 +149,7 @@ export async function generateReportContent(params: {
   const seoGrade  = lh ? lighthouseGrade(lh.seo)           : 'F'
   const cwvGrade  = coreVitalsGrade(coreVitalsPass ?? null)
   const secGrade  = secHeaders.presentCount >= 0 ? securityHeadersGrade(secHeaders.presentCount) : 'D'
-  const leadGrade = leadCaptureGrade(site.leadCaptureCount)
+  const leadGrade = leadCaptureGrade(leadCaptureCount)
   const repGrade  = reviewRating && reviewCount ? reputationGrade(reviewRating, reviewCount) : 'B'
 
   const prompt = `You are writing a website audit report for a dental practice. Your job is to turn technical data into a compelling, plain-English sales document that a dentist will understand and find valuable. The tone is direct, honest, and specific — not generic marketing fluff.
@@ -156,12 +157,12 @@ export async function generateReportContent(params: {
 PRACTICE: ${businessName}
 WEBSITE: ${domain}
 
-PAGE TITLE: ${site.title}
-META DESCRIPTION: ${site.description}
-ADDRESS FOUND: ${site.addressText || 'not found in structured data'}
+PAGE TITLE: ${site?.title ?? 'not available'}
+META DESCRIPTION: ${site?.description ?? 'not available'}
+ADDRESS FOUND: ${site?.addressText || 'not found in structured data'}
 GOOGLE REVIEWS: ${reviewRating ? `${reviewRating}★ from ${reviewCount} reviews` : 'not found in page schema'}
 
-LEAD CAPTURE MECHANISMS DETECTED ON SITE: ${site.leadCaptureMechanisms.length > 0 ? site.leadCaptureMechanisms.join(', ') : 'none detected'}
+LEAD CAPTURE MECHANISMS DETECTED ON SITE: ${(site?.leadCaptureMechanisms.length ?? 0) > 0 ? site!.leadCaptureMechanisms.join(', ') : 'none detected'}
 
 LIGHTHOUSE SCORES (mobile, 0–100):
 - Performance: ${lh?.performance ?? 'unavailable'}
@@ -182,7 +183,7 @@ SECURITY HEADERS: ${secHeaders.presentCount >= 0 ? `${secHeaders.presentCount} o
 ${secHeaders.present.length > 0 ? `Present: ${secHeaders.present.join(', ')}` : ''}
 
 WEBSITE TEXT SNIPPET (first 4000 chars of visible text):
-${site.bodySnippet}
+${site?.bodySnippet ?? 'site could not be fetched — work from the scores and URL alone'}
 
 ---
 
@@ -196,7 +197,7 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
   "heroSubheading": "2 sentences max. Mention the business name, what we did (ran the website through Google diagnostics), and the key tension (great reputation/presence but the website isn't converting it). If we found reviews, mention the rating and count.",
   "heroMeta": [
     { "primary": "address if found, else 'TODO: address'", "secondary": "Trading since XXXX if found in page text, else 'TODO: trading since'" },
-    { "primary": "any notable credential or specialty found (e.g. Invisalign Provider, Implant Centre)", "secondary": "descriptor" },
+    { "primary": "any notable credential or specialty found (e.g. Invisalign Provider, Implant Centre), else 'TODO: credential'", "secondary": "descriptor" },
     { "primary": "X of 3", "secondary": "Booking, chatbot, contact form live" }
   ],
   "lighthouseNotes": {
@@ -251,7 +252,7 @@ Guidelines:
 - diagnosisFindings: write 3–5 findings. Base them on the top opportunities and any obvious issues from the scores. Stat should be the most impactful number.
 - treatmentPlan bullets should be specific to this practice's actual problems, not generic.
 - prognosisRows: 4 rows, each showing a concrete before/after improvement from Phase 1.
-- heroMeta third item: use the actual lead capture count detected (${site.leadCaptureCount} of 3).
+- heroMeta third item: use the actual lead capture count detected (${leadCaptureCount} of 3).
 - If address was not found, use "TODO: address" as primary.
 - If trading-since year is not in the page text, use "TODO: trading since".`
 
@@ -278,7 +279,7 @@ Guidelines:
     treatmentPlan:     parsed.treatmentPlan,
     prognosisRows:     parsed.prognosisRows,
     services:          parsed.services,
-    leadCaptureCount:  site.leadCaptureCount,
+    leadCaptureCount,
     reportCardGrades: {
       performance:    perfGrade,
       coreVitals:     cwvGrade,

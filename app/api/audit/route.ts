@@ -282,12 +282,10 @@ export async function GET(request: NextRequest) {
 
   const techStack = techResult.status === 'fulfilled' ? techResult.value : { cms: null, hosting: null, other: [] }
 
-  // AI generation
+  // AI generation — runs even if site scrape failed (just with less context)
   let ai: Awaited<ReturnType<typeof generateReportContent>> | null = null
   if (!aiKey) {
     errors.push('ANTHROPIC_API_KEY not set — narrative fields left as TODO')
-  } else if (!site) {
-    errors.push('Site scrape failed — skipping AI generation')
   } else {
     try {
       ai = await generateReportContent({
