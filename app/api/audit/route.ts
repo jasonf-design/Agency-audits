@@ -3,7 +3,7 @@ import { scrapeWebsite, generateReportContent } from '@/lib/ai-generate'
 import { publishClient } from '@/lib/github-publish'
 import type { CoreVital, VitalStatus, TechStack } from '@/lib/types'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 const SECURITY_HEADERS = [
   'content-security-policy',
@@ -30,7 +30,7 @@ function formatVitalValue(value: number | undefined, metric: string): string {
 
 async function runPageSpeed(url: string, apiKey: string) {
   const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&key=${apiKey}`
-  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(55000) })
+  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(40000) })
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`PageSpeed API ${res.status}: ${text.slice(0, 200)}`)
