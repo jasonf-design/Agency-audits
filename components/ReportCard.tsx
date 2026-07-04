@@ -92,13 +92,18 @@ export default function ReportCard({ items, patientLabel }: ReportCardProps) {
         gap: 1,
         background: '#3a332c',
         borderRadius: 12,
-        overflow: 'hidden',
       }}>
-        {items.map((item) => {
+        {items.map((item, i) => {
           const colour = GRADE_COLOR[gradeColour(item.grade)]
           const tip = CARD_TIPS[item.label]
+          const br = {
+            borderTopLeftRadius:     i === 0                    ? 12 : 0,
+            borderTopRightRadius:    i === 3                    ? 12 : 0,
+            borderBottomLeftRadius:  i === items.length - 4     ? 12 : 0,
+            borderBottomRightRadius: i === items.length - 1     ? 12 : 0,
+          }
           return (
-            <div key={item.label} style={{ background: 'var(--ink)', padding: '22px 16px', textAlign: 'center' }}>
+            <div key={item.label} style={{ background: 'var(--ink)', padding: '22px 16px', textAlign: 'center', ...br }}>
               <div style={{ fontFamily: 'var(--font-space)', fontWeight: 700, fontSize: 38, lineHeight: 1, color: colour }}>
                 {item.grade}
               </div>
