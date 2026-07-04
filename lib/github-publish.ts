@@ -68,13 +68,16 @@ function addClientToRegistry(current: string, slug: string): string {
     updated = importLine + '\n' + updated
   }
 
-  // Add to allClients array — find the ] that closes the array and insert before it
-  const arrayStart = updated.indexOf('export const allClients')
-  if (arrayStart !== -1) {
-    const closingBracket = updated.indexOf(']', arrayStart)
-    if (closingBracket !== -1) {
-      const lineStart = updated.lastIndexOf('\n', closingBracket)
-      updated = updated.slice(0, lineStart + 1) + entry + '\n' + updated.slice(lineStart + 1)
+  // Add to allClients array — anchor to `= [` to skip past the type annotation `ClientData[]`
+  const arrayDeclIdx = updated.indexOf('export const allClients')
+  if (arrayDeclIdx !== -1) {
+    const arrayOpenIdx = updated.indexOf('= [', arrayDeclIdx)
+    if (arrayOpenIdx !== -1) {
+      // Find `\n]` — the closing bracket on its own line
+      const closingIdx = updated.indexOf('\n]', arrayOpenIdx)
+      if (closingIdx !== -1) {
+        updated = updated.slice(0, closingIdx + 1) + entry + '\n' + updated.slice(closingIdx + 1)
+      }
     }
   }
 
