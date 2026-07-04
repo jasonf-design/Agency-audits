@@ -1,6 +1,7 @@
 import type { ClientData, TerritoryData } from './types'
 import { data as confidental } from '@/clients/confidental/data'
 import { data as deepcarDental } from '@/clients/deepcar-dental/data'
+import { data as deepcar } from '@/clients/deepcar/data'
 import { data as eastMidlands } from '@/territories/east-midlands'
 
 // ── Client registry ───────────────────────────────────────────────────────────
