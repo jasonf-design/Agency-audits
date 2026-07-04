@@ -53,22 +53,30 @@ async function putFile(path: string, content: string, message: string, sha?: str
 }
 
 function addClientToRegistry(current: string, slug: string): string {
-  const importLine = `import { data as ${toCamel(slug)} } from '@/clients/${slug}/data'`
-  const entry      = `  ${toCamel(slug)},`
+  const camel      = toCamel(slug)
+  const importLine = `import { data as ${camel} } from '@/clients/${slug}/data'`
+  const entry      = `  ${camel},`
 
-  // Add import after the last existing client import
   let updated = current
-  const lastImport = current.lastIndexOf("from '@/clients/")
-  if (lastImport !== -1) {
-    const lineEnd = current.indexOf('\n', lastImport)
+
+  // Add import after the last existing @/clients import line
+  const lastImportIdx = updated.lastIndexOf("from '@/clients/")
+  if (lastImportIdx !== -1) {
+    const lineEnd = updated.indexOf('\n', lastImportIdx)
     updated = updated.slice(0, lineEnd + 1) + importLine + '\n' + updated.slice(lineEnd + 1)
   } else {
-    // Fallback: add before the export
     updated = importLine + '\n' + updated
   }
 
-  // Add to allClients array — insert before the closing ]
-  updated = updated.replace(/(export const allClients[^[]*\[[^\]]*?)(\n\])/s, `$1\n${entry}$2`)
+  // Add to allClients array — find the ] that closes the array and insert before it
+  const arrayStart = updated.indexOf('export const allClients')
+  if (arrayStart !== -1) {
+    const closingBracket = updated.indexOf(']', arrayStart)
+    if (closingBracket !== -1) {
+      const lineStart = updated.lastIndexOf('\n', closingBracket)
+      updated = updated.slice(0, lineStart + 1) + entry + '\n' + updated.slice(lineStart + 1)
+    }
+  }
 
   return updated
 }

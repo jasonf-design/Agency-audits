@@ -38,6 +38,14 @@ function StatusDot({ status }: { status: string }) {
   return <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: colour, marginRight: 6, flexShrink: 0 }} />
 }
 
+const VITAL_FRIENDLY: Record<string, { name: string; plain: string }> = {
+  LCP:  { name: 'Main content loads',  plain: 'How fast the big image or headline appears. Under 2.5s = good.' },
+  TTFB: { name: 'Server responds',     plain: 'Time before the server starts sending data. Slow TTFB drags everything else down.' },
+  FCP:  { name: 'Something appears',   plain: 'When anything first shows on screen. Long gap → patients assume the site is broken.' },
+  CLS:  { name: 'Page stays steady',   plain: 'Whether elements jump around while loading. 0 is perfect.' },
+  INP:  { name: 'Responds to taps',    plain: 'Delay between tapping a button and the page reacting.' },
+}
+
 export default function AdminGeneratePage() {
   const [url, setUrl]           = useState('')
   const [name, setName]         = useState('')
@@ -245,15 +253,29 @@ export default function AdminGeneratePage() {
                 }}>
                   {result.coreVitalsPass === true ? '✓ PASSED' : result.coreVitalsPass === false ? '✗ FAILED' : '— No field data'}
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {result.coreVitals.map((v) => (
-                    <div key={v.metric} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                      <StatusDot status={v.status} />
-                      <span style={{ width: 44, color: 'var(--ink-soft)' }}>{v.metric}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{v.displayValue}</span>
-                      <span style={{ color: 'var(--ink-soft)', fontSize: 12 }}>{v.status}</span>
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {result.coreVitals.map((v) => {
+                    const meta = VITAL_FRIENDLY[v.metric]
+                    return (
+                      <div key={v.metric} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <StatusDot status={v.status} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                            <span style={{ fontFamily: 'var(--font-space)', fontWeight: 600, fontSize: 13, color: 'var(--ink)' }}>
+                              {meta?.name ?? v.metric}
+                            </span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-soft)' }}>{v.metric}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginLeft: 'auto' }}>{v.displayValue}</span>
+                          </div>
+                          {meta && (
+                            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.5 }}>
+                              {meta.plain}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
