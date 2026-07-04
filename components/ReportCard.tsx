@@ -11,19 +11,26 @@ const GRADE_COLOR: Record<ReturnType<typeof gradeColour>, string> = {
   red:    '#f28b82',
 }
 
-// Plain-English descriptions for the less obvious report card labels
-const CARD_TIPS: Partial<Record<string, { title: string; body: string }>> = {
+const CARD_TIPS: Record<string, { title: string; body: string }> = {
+  'Performance': {
+    title: 'Overall website speed score',
+    body:  "A single number from 0 to 100 measuring how fast the page loads on a mobile phone. Google's benchmark: 90+ is good, below 50 is a serious problem. Slow sites rank lower and lose patients before the page even opens.",
+  },
   'Core Web Vitals': {
     title: "Google's official speed test",
     body:  "Google runs three specific speed measurements and uses the results to decide where to rank websites in search results. A failing grade here directly hurts rankings on Google.",
+  },
+  'Lead capture': {
+    title: 'Ways to capture a new patient enquiry',
+    body:  "Counts how many ways a potential patient can get in touch without picking up the phone — online booking, a chatbot, a contact form. Every missing option is lost business outside office hours.",
   },
   'Security headers': {
     title: 'Protection against web attacks',
     body:  "Behind-the-scenes settings that protect the website and its visitors from common online threats. Invisible to patients, but browsers and Google both check for them.",
   },
-  'Lead capture': {
-    title: 'Ways to capture a new patient enquiry',
-    body:  "Counts how many ways a potential patient can get in touch without picking up the phone — online booking, a chatbot, a contact form. Every missing option is lost business outside office hours.",
+  'Accessibility': {
+    title: 'How usable it is for every patient',
+    body:  "Checks whether the site works for patients who use screen readers, have visual impairments, or navigate by keyboard. Also covers colour contrast — can older patients read the text comfortably? Google factors this into rankings.",
   },
   'Best practices': {
     title: 'Following modern web standards',
@@ -32,6 +39,10 @@ const CARD_TIPS: Partial<Record<string, { title: string; body: string }>> = {
   'On-page SEO': {
     title: 'How well Google can read the site',
     body:  "Checks page titles, descriptions, headings and link structure. A high score means Google can understand the site — it doesn't guarantee top rankings, but it removes a barrier.",
+  },
+  'Reputation': {
+    title: 'Google review rating and volume',
+    body:  "Based on the practice's Google star rating and number of reviews. Strong reviews are one of the biggest factors in a patient choosing one dentist over another from a search results page.",
   },
 }
 
