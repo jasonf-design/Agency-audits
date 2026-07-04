@@ -9,6 +9,7 @@ import { data as eastMidlands } from '@/territories/east-midlands'
 export const allClients: ClientData[] = [
   confidental,
   deepcarDental,
+  deepcar,
 ]
 
 // ── Territory registry ────────────────────────────────────────────────────────
