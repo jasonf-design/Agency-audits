@@ -2,32 +2,32 @@ import type { ClientData } from '@/lib/types'
 
 export const data: ClientData = {
   slug: 'deepcar-dental',
-  businessName: 'DeepCar Dental',
-  url: 'https://deepcardentalcare.co.uk/',
+  businessName: 'Deepcar Dental',
+  url: 'https://www.deepcardentalcare.co.uk',
   reportDate: '2026-07-04',
 
   territory: 'East Midlands',
   referredBy: 'James Allen',
 
   heroHeadline: {
-    before:   'Great dentistry.\nWebsite needs ',
-    emphasis: 'urgent attention',
+    before:   'Good scores.\nWebsite needs ',
+    emphasis: 'urgent treatment',
   },
-  heroSubheading: 'We ran deepcardentalcare.co.uk through Google\'s own diagnostic tools and found a practice doing everything right clinically — same-day emergencies, implants, transparent pricing — but a website that\'s quietly turning patients away before they ever pick up the phone.',
+  heroSubheading: 'We ran Deepcar Dental Care\'s website through Google\'s own diagnostic tools and found a practice with strong content and clear patient appeal — but a site quietly turning away the emergency patients it\'s working hard to attract. The technical issues are specific, fixable, and costing real appointments.',
   heroMeta: [
     { primary: '334 Manchester Rd, Deepcar, Sheffield S36 2RH', secondary: 'Est. locally' },
-    { primary: 'Emergency & Implant Practice', secondary: 'Cosmetic & family care' },
-    { primary: '2 of 3', secondary: 'Booking widget & chatbot live' },
+    { primary: 'Emergency, Implants & Cosmetic Dentistry', secondary: 'Family & emergency care' },
+    { primary: '2 of 3', secondary: 'Booking widget & live chat active' },
   ],
 
   reportCard: [
-    { label: 'Performance',      grade: 'A-' },
+    { label: 'Performance',      grade: 'B' },
     { label: 'Core Web Vitals',  grade: 'F'  },
     { label: 'Lead capture',     grade: 'A' },
     { label: 'Security headers', grade: 'F'  },
-    { label: 'Accessibility',    grade: 'F' },
-    { label: 'Best practices',   grade: 'F'   },
-    { label: 'On-page SEO',      grade: 'F'  },
+    { label: 'Accessibility',    grade: 'A-' },
+    { label: 'Best practices',   grade: 'A+'   },
+    { label: 'On-page SEO',      grade: 'A-'  },
     { label: 'Reputation',       grade: 'B'  },
   ],
 
@@ -41,52 +41,52 @@ export const data: ClientData = {
   ],
 
   lighthouse: {
-    performance:   { score: 91,   note: 'At 91 out of 100, mobile performance is genuinely strong — but 108KB of unused CSS is adding around 450ms of unnecessary load time that could cost you impatient patients searching in pain.' },
-    accessibility: { score: 0, note: 'Google scored accessibility at 0 out of 100, which means the site likely has missing alt text, poor colour contrast, or unlabelled form fields — issues that also directly harm your Google rankings.' },
-    bestPractices: { score: 0, note: 'A Best Practices score of 0 typically points to missing HTTPS enforcement, console errors, or deprecated code — problems that signal to Google and to browsers that your site isn\'t safe or well-maintained.' },
-    seo:           { score: 0,           note: 'An SEO score of 0 is a serious red flag — it means Google\'s crawler is finding structural problems that will actively suppress your rankings, even if your page content is well-written.' },
+    performance:   { score: 77,   note: 'A mobile score of 77 is being dragged down by page redirects adding 780ms of delay and 108KB of unused CSS that forces visitors\' phones to load code the site never uses.' },
+    accessibility: { score: 91, note: 'Scoring 91 out of 100 is solid, but the remaining gaps likely affect users with visual impairments or those using screen readers — a risk worth closing, especially for anxious or elderly patients.' },
+    bestPractices: { score: 100, note: 'A perfect 100 here means the site is built on sound technical ground — no mixed content, no deprecated code — which makes the other issues easier to fix cleanly.' },
+    seo:           { score: 92,           note: '92 out of 100 looks impressive, but SEO score alone doesn\'t mean you\'re ranking — Google\'s Core Web Vitals assessment is a separate signal, and this site is currently failing it, which actively suppresses search visibility.' },
   },
 
   diagnosisFindings: [
-    { stat: '0 / 100', title: 'Google can\'t properly read your site', body: 'Your SEO score from Google Lighthouse is zero — not low, zero. That means there are fundamental technical problems stopping Google from fully understanding and indexing your pages. For a practice competing on emergency dentistry in Sheffield, this is the equivalent of not being in the phone book. Patients searching \'emergency dentist Sheffield\' right now may never see you.' },
-    { stat: '0 of 6', title: 'No security headers in place', body: 'Your site is missing all six standard security headers that modern browsers and Google expect to see. These headers protect your visitors from certain types of attack and signal to Google that your site is trustworthy. Their absence is a direct contributor to your Best Practices score of zero and can affect how patients\' browsers display your site.' },
-    { stat: 'CWV FAILED', title: 'Core Web Vitals are failing — officially', body: 'Google\'s Core Web Vitals are the page experience signals used to rank websites. Deepcar Dental\'s site is officially failing this assessment, driven largely by a TTFB (Time to First Byte) of 0.8 seconds — meaning your server itself is slow to respond. This isn\'t just a technical footnote; Google uses CWV as a ranking factor, so you may be losing positions to competitors whose sites load faster.' },
-    { stat: '0', title: 'No structured data — address and reviews invisible to Google', body: 'Your practice address and Google Reviews aren\'t appearing in your site\'s structured data. This means Google can\'t confidently connect your website to your physical location or your star rating. Practices with proper local schema markup get richer results in Google Search — including star ratings and address details — which dramatically increases click-through rates from local searches.' },
-    { stat: '108KB', title: 'Bloated CSS is slowing every page load', body: 'There\'s 108 kilobytes of CSS code being loaded on your site that isn\'t used — adding roughly 450 milliseconds of unnecessary delay on every visit. For someone searching for an emergency dentist while in pain, that half-second gap before your page responds can be the difference between them staying or hitting the back button to try a competitor.' },
+    { stat: 'FAILED', title: 'Google\'s Core Web Vitals: officially failing', body: 'Despite several individual metrics looking fine, Google has marked this site as failing its Core Web Vitals assessment overall. This matters because Google uses these results as a ranking factor — a failing site is at a structural disadvantage in search results compared to competitors who pass. For a practice competing on emergency searches where position one versus position three can mean the difference between a new patient and a missed call, this needs fixing.' },
+    { stat: '780ms', title: 'Unnecessary redirects slowing every visit', body: 'Before a single word of the website loads, visitors are waiting an extra 780 milliseconds while the server bounces them through unnecessary redirect steps. On mobile — where most emergency dental searches happen — that\'s the difference between someone staying on the page and someone hitting the back button. This is entirely avoidable and has no benefit to the patient experience.' },
+    { stat: '108KB', title: 'Unused code adding dead weight to every page load', body: 'The site is loading 108 kilobytes of CSS that it never actually uses on screen. That\'s dead weight being downloaded by every visitor on every page, costing around 600ms of extra load time on mobile connections. Removing it is a straightforward technical task that delivers an immediate and measurable speed improvement.' },
+    { stat: '0 of 6', title: 'Zero security headers in place', body: 'Your website has none of the six standard HTTP security headers that modern browsers expect to see. These headers protect visitors from common attacks like clickjacking and cross-site scripting — and their absence is visible to anyone who checks, including Google. For a healthcare website handling patient enquiries and booking data, this is a trust and compliance gap that should be closed.' },
+    { stat: 'Not found', title: 'Google Reviews not showing in search results', body: 'Your Google review rating and count are not embedded in the site\'s structured data, which means Google cannot display your star rating directly in search results. For a practice that clearly invests in patient trust — with testimonials and a strong community message on the homepage — this is a missed opportunity every single time someone searches for an emergency dentist in Sheffield and your listing appears without stars.' },
   ],
 
   treatmentPlan: [
     {
       phaseLabel: 'Phase 1 — Stop the leak',
-      title: 'Fix what\'s actively costing you patients right now',
-      bullets: ['Implement all six missing security headers to resolve the Best Practices score of zero and stop browsers flagging your site', 'Add structured data markup for your practice address (334 Manchester Rd, Deepcar) and Google Reviews so they appear in search results', 'Diagnose and resolve the technical issues causing the SEO score of zero — likely missing meta robots tags, crawl errors, or broken canonical links'],
+      title: 'Remove the friction costing you emergency patients',
+      bullets: ['Eliminate the multi-step page redirects adding 780ms to every mobile load — priority fix for emergency search traffic', 'Strip out the 108KB of unused CSS slowing the site down on the connections real patients use', 'Implement all six missing HTTP security headers to protect patient data and remove a visible trust gap'],
     },
     {
       phaseLabel: 'Phase 2 — Fix the foundations',
-      title: 'Pass Core Web Vitals and make Google rank you properly',
-      bullets: ['Investigate and resolve the server TTFB of 0.8s — this typically means switching hosting tier or enabling server-side caching', 'Strip out the 108KB of unused CSS to recover the 450ms load time penalty identified by Lighthouse', 'Fix the accessibility score of zero by auditing and correcting missing image alt text, form labels, and colour contrast across the site', 'Ensure the booking widget and chatbot are not contributing to render-blocking that worsens Core Web Vitals on mobile'],
+      title: 'Give Google every reason to rank you above competitors',
+      bullets: ['Add structured data markup for your address so Google can confidently associate the site with your Sheffield location', 'Embed review schema so your star rating appears directly in search results for emergency and private dentist queries', 'Resolve the TTFB issue flagged in Core Web Vitals field data to bring the overall CWV assessment from failing to passing', 'Audit and consolidate the site\'s CSS delivery so mobile visitors get a fast, clean first paint every time'],
     },
     {
       phaseLabel: 'Phase 3 — Grow the funnel',
       title: 'Turn more visitors into booked appointments',
-      bullets: ['Expand local SEO content targeting the surrounding villages already named on the site — Wadsley, Dore, Fulwood, Ranmoor, Greystones — with properly structured landing pages', 'Connect your Google Reviews to the site\'s schema so your star rating displays in search results and increases click-through from emergency searches', 'Optimise the chatbot and booking widget flow specifically for emergency dental enquiries, reducing the number of steps between \'in pain\' and \'appointment booked\''],
+      bullets: ['Upgrade the live chat to a trained 24/7 dental chatbot that captures emergency enquiries out of hours and routes them to the booking widget', 'Build automated follow-up sequences for enquiries that don\'t convert immediately — particularly for implants and cosmetic consultations where patients take longer to decide', 'Expand local landing pages beyond the current Sheffield village pages to capture surrounding Barnsley and Stocksbridge searches at scale'],
     },
   ],
 
   prognosisRows: [
-    { today: 'SEO score of 0 — Google is finding structural errors that suppress your rankings', after: 'Technical SEO errors resolved, site fully crawlable and indexable by Google', why: 'Fixing canonical tags, meta issues, and crawl errors removes the barriers stopping Google from ranking your pages' },
-    { today: 'No address or reviews in structured data — your location and reputation are invisible in search', after: 'Practice address and star rating visible in Google Search results with rich snippet markup', why: 'Adding local business schema connects your site to your Google Business Profile and displays trust signals directly in the results' },
-    { today: 'Core Web Vitals officially failing — Google is likely deprioritising your site in rankings', after: 'Core Web Vitals pass, removing a known negative ranking signal', why: 'Resolving TTFB and removing unused CSS directly addresses the two main causes of the CWV failure' },
-    { today: 'Zero security headers — browsers and Google flag the site as not fully trustworthy', after: 'All six security headers in place, Best Practices score recovers from zero', why: 'Security headers are a straightforward server-level fix that immediately resolves the Best Practices failure' },
+    { today: 'Core Web Vitals: FAILED — suppressing Google search rankings', after: 'Core Web Vitals: PASSED — competing on equal footing in local search', why: 'Fixing redirects and unused CSS directly improves the speed metrics Google measures' },
+    { today: 'No star rating visible in Google search results', after: 'Review stars displayed on every relevant search result', why: 'Adding review schema lets Google pull and display your rating automatically' },
+    { today: '0 of 6 security headers — patient data unprotected, trust signal missing', after: 'Full security header suite in place — compliant and visibly trustworthy', why: 'Headers are a server-level configuration change with no impact on site design' },
+    { today: 'Address not in structured data — Google uncertain about your location', after: 'Location confirmed in schema — stronger local pack and map visibility', why: 'Structured address data is a direct local SEO ranking signal for Sheffield searches' },
   ],
 
   services: [
-    { title: '24/7 chatbot', description: 'Your current chatbot is live but unoptimised — we configure it specifically for emergency dental enquiries so patients in pain at midnight get triaged and booked, not just greeted.' },
-    { title: 'Lead automation', description: 'Every patient who fills in a form or starts a chat on deepcardentalcare.co.uk but doesn\'t book gets an automated follow-up sequence — so your new patient offer of £39 doesn\'t just get seen, it gets acted on.' },
-    { title: 'Data entry automation', description: 'New enquiry details from your booking widget and chat are captured and pushed directly into your practice management system, removing manual admin between an online enquiry and a confirmed appointment.' },
-    { title: 'Image optimisation', description: 'Your site currently weighs 1.2MB — we compress and lazy-load images to bring that down significantly, reducing load time for every visitor on mobile.' },
-    { title: 'Security hardening', description: 'All six missing security headers — including Content-Security-Policy, X-Frame-Options, and Strict-Transport-Security — are implemented at server level to resolve your Best Practices score of zero.' },
-    { title: 'SEO & content', description: 'You\'re already naming local areas like Wadsley, Dore, and Fulwood on the site but without structured landing pages — we build these out properly so you rank for emergency dentist searches across the full catchment.' },
+    { title: '24/7 chatbot', description: 'Deepcar Dental\'s busiest enquiry type is emergency — a trained chatbot means a patient in pain at 11pm gets a response, a triage question, and a booking prompt instead of a contact form and silence.' },
+    { title: 'Lead automation', description: 'Patients considering implants or cosmetic treatment rarely book on the first visit — automated follow-up sequences keep Deepcar Dental in front of those leads until they\'re ready to commit.' },
+    { title: 'Data entry automation', description: 'Connecting your booking widget and enquiry forms to your patient management system removes the manual step between an online booking and an appointment appearing in the diary.' },
+    { title: 'Image optimisation', description: 'At 1.2MB total page weight there\'s room to compress images further and serve next-generation formats, shaving additional load time off every mobile visit without changing how anything looks.' },
+    { title: 'Security hardening', description: 'All six missing security headers — including Content-Security-Policy, X-Frame-Options, and Strict-Transport-Security — can be added at server level without touching the site\'s design or content.' },
+    { title: 'SEO & content', description: 'The existing village-level emergency pages are a strong start, but there are no equivalent local pages targeting Barnsley, Stocksbridge or Oughtibridge for implants and cosmetic treatment — a gap competitors could fill first.' },
   ],
 
   techStack: {
