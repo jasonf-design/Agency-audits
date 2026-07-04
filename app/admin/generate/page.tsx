@@ -8,6 +8,8 @@ interface AuditResult {
   slug: string
   url: string
   reportDate: string
+  pagesScanned: string[]
+  perPageScores: Array<{ url: string; scores: { performance: number; accessibility: number; bestPractices: number; seo: number } | null }>
   lighthouse: { performance: number; accessibility: number; bestPractices: number; seo: number } | null
   coreVitals: Array<{ metric: string; displayValue: string; status: string }> | null
   coreVitalsPass: boolean | null
@@ -221,11 +223,58 @@ export default function AdminGeneratePage() {
               </div>
             )}
 
+            {/* Pages scanned */}
+            {result.pagesScanned && result.pagesScanned.length > 0 && (
+              <div style={{ background: '#fff', borderRadius: 14, padding: 24, border: '1px solid var(--stone-line)' }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-soft)', marginBottom: 12 }}>
+                  Pages scanned ({result.pagesScanned.length})
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {result.perPageScores.map((p) => {
+                    const path = (() => { try { return new URL(p.url).pathname || '/' } catch { return p.url } })()
+                    const s = p.scores
+                    return (
+                      <div key={p.url} style={{ background: 'var(--stone)', borderRadius: 8, padding: '10px 14px' }}>
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink)', marginBottom: s ? 8 : 0 }}>
+                          {path}
+                        </p>
+                        {s ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                            {[
+                              { label: 'Perf', val: s.performance },
+                              { label: 'A11y', val: s.accessibility },
+                              { label: 'BP',   val: s.bestPractices },
+                              { label: 'SEO',  val: s.seo },
+                            ].map(({ label, val }) => (
+                              <div key={label} style={{ textAlign: 'center' }}>
+                                <div style={{
+                                  fontFamily: 'var(--font-space)', fontWeight: 700, fontSize: 18,
+                                  color: val >= 90 ? '#1F7A43' : val >= 50 ? '#A66B14' : '#C13030',
+                                }}>{val}</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#C13030' }}>scan failed</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                {result.lighthouse && (
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-soft)', marginTop: 12 }}>
+                    Scores below show the worst result across all pages scanned.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Scores */}
             {result.lighthouse && (
               <div style={{ background: '#fff', borderRadius: 14, padding: 24, border: '1px solid var(--stone-line)' }}>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-soft)', marginBottom: 16 }}>
-                  Lighthouse scores (mobile)
+                  Lighthouse scores (mobile — worst across all pages)
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   <ScoreChip label="Performance"    score={result.lighthouse.performance}   />

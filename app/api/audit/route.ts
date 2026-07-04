@@ -14,6 +14,8 @@ const SECURITY_HEADERS = [
   'referrer-policy',
 ]
 
+const SUBPAGE_KEYWORDS = ['service', 'treatment', 'contact', 'booking', 'implant', 'invisalign', 'cosmetic', 'emergency', 'about', 'price', 'fee']
+
 function vitalStatus(rating: string | undefined): VitalStatus {
   if (!rating) return 'no-data'
   if (rating === 'FAST') return 'good'
@@ -28,6 +30,55 @@ function formatVitalValue(value: number | undefined, metric: string): string {
   return `${(value / 1000).toFixed(1)}s`
 }
 
+function subpageScore(pathname: string): number {
+  const p = pathname.toLowerCase()
+  const idx = SUBPAGE_KEYWORDS.findIndex((k) => p.includes(k))
+  return idx === -1 ? 999 : idx
+}
+
+async function findSubpages(baseUrl: string): Promise<string[]> {
+  const origin = new URL(baseUrl).origin
+  const isInternal = (href: string) => {
+    try { return new URL(href).hostname === new URL(origin).hostname } catch { return false }
+  }
+
+  // Try sitemap.xml first
+  try {
+    const res = await fetch(`${origin}/sitemap.xml`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SozeroAuditBot/1.0)' },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (res.ok) {
+      const xml = await res.text()
+      const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+        .map((m) => m[1].trim())
+        .filter((loc) => isInternal(loc) && new URL(loc).pathname !== '/' && loc !== baseUrl)
+      if (locs.length > 0) {
+        return locs
+          .sort((a, b) => subpageScore(new URL(a).pathname) - subpageScore(new URL(b).pathname))
+          .slice(0, 2)
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Fallback: extract internal links from the homepage
+  try {
+    const res = await fetch(baseUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SozeroAuditBot/1.0)' },
+      signal: AbortSignal.timeout(10000),
+    })
+    const html = await res.text()
+    const hrefs = [...html.matchAll(/href=["']([^"'#?]+)["']/g)].map((m) => m[1])
+    const links = hrefs
+      .map((h) => { try { return new URL(h, origin).href } catch { return null } })
+      .filter((h): h is string => h !== null && isInternal(h) && new URL(h).pathname !== '/' && h !== baseUrl)
+    const unique = [...new Set(links)]
+    return unique
+      .sort((a, b) => subpageScore(new URL(a).pathname) - subpageScore(new URL(b).pathname))
+      .slice(0, 2)
+  } catch { return [] }
+}
+
 async function runPageSpeed(url: string, apiKey: string) {
   const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo&key=${apiKey}`
   const res = await fetch(apiUrl, { signal: AbortSignal.timeout(90000) })
@@ -36,6 +87,94 @@ async function runPageSpeed(url: string, apiKey: string) {
     throw new Error(`PageSpeed API ${res.status}: ${text.slice(0, 200)}`)
   }
   return res.json()
+}
+
+interface ParsedPage {
+  url: string
+  lighthouse: { performance: number; accessibility: number; bestPractices: number; seo: number } | null
+  coreVitals: CoreVital[] | null
+  coreVitalsPass: boolean | null
+  totalPageWeightKb: number | null
+  topOpportunities: Array<{ title: string; savingsKb: number | null; savingsMs: number | null }>
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parsePageSpeedJson(url: string, json: any): ParsedPage {
+  const cats = json.lighthouseResult?.categories ?? {}
+  const auds = json.lighthouseResult?.audits ?? {}
+  const score = (key: string) => Math.round((cats[key]?.score ?? 0) * 100)
+  const lighthouse = {
+    performance:   score('performance'),
+    accessibility: score('accessibility'),
+    bestPractices: score('best-practices'),
+    seo:           score('seo'),
+  }
+
+  const cwv   = json.loadingExperience ?? {}
+  const field = cwv.metrics ?? {}
+  const coreVitalsPass: boolean | null = cwv.overall_category ? cwv.overall_category === 'FAST' : null
+
+  const coreVitals: CoreVital[] = [
+    { metric: 'LCP',  displayValue: formatVitalValue(field.LARGEST_CONTENTFUL_PAINT_MS?.percentile,     'LCP'),  status: vitalStatus(field.LARGEST_CONTENTFUL_PAINT_MS?.category)     },
+    { metric: 'TTFB', displayValue: formatVitalValue(field.EXPERIMENTAL_TIME_TO_FIRST_BYTE?.percentile, 'TTFB'), status: vitalStatus(field.EXPERIMENTAL_TIME_TO_FIRST_BYTE?.category) },
+    { metric: 'FCP',  displayValue: formatVitalValue(field.FIRST_CONTENTFUL_PAINT_MS?.percentile,       'FCP'),  status: vitalStatus(field.FIRST_CONTENTFUL_PAINT_MS?.category)       },
+    { metric: 'CLS',  displayValue: formatVitalValue(field.CUMULATIVE_LAYOUT_SHIFT_SCORE?.percentile,   'CLS'),  status: vitalStatus(field.CUMULATIVE_LAYOUT_SHIFT_SCORE?.category)   },
+    { metric: 'INP',  displayValue: formatVitalValue(field.INTERACTION_TO_NEXT_PAINT?.percentile,       'INP'),  status: vitalStatus(field.INTERACTION_TO_NEXT_PAINT?.category)       },
+  ]
+
+  const totalBytes: number | undefined = auds['total-byte-weight']?.numericValue
+  const totalPageWeightKb = totalBytes ? Math.round(totalBytes / 1024) : null
+
+  const topOpportunities = Object.values(auds as Record<string, { details?: { type: string; overallSavingsMs?: number; overallSavingsBytes?: number }; title?: string }>)
+    .filter((a) => a?.details?.type === 'opportunity' && (a.details.overallSavingsMs ?? 0) > 0)
+    .sort((a, b) => (b.details?.overallSavingsMs ?? 0) - (a.details?.overallSavingsMs ?? 0))
+    .slice(0, 5)
+    .map((a) => ({
+      title:     a.title ?? 'Unknown',
+      savingsKb: a.details?.overallSavingsBytes ? Math.round(a.details.overallSavingsBytes / 1024) : null,
+      savingsMs: a.details?.overallSavingsMs    ? Math.round(a.details.overallSavingsMs)            : null,
+    }))
+
+  return { url, lighthouse, coreVitals, coreVitalsPass, totalPageWeightKb, topOpportunities }
+}
+
+function aggregatePages(pages: ParsedPage[]): {
+  lighthouse: { performance: number; accessibility: number; bestPractices: number; seo: number } | null
+  coreVitals: CoreVital[] | null
+  coreVitalsPass: boolean | null
+  totalPageWeightKb: number | null
+  topOpportunities: Array<{ title: string; savingsKb: number | null; savingsMs: number | null }>
+  perPageScores: Array<{ url: string; scores: { performance: number; accessibility: number; bestPractices: number; seo: number } | null }>
+} {
+  const withScores = pages.filter((p) => p.lighthouse !== null)
+  const homepage   = pages[0]
+
+  const lighthouse = withScores.length > 0 ? {
+    performance:   Math.min(...withScores.map((p) => p.lighthouse!.performance)),
+    accessibility: Math.min(...withScores.map((p) => p.lighthouse!.accessibility)),
+    bestPractices: Math.min(...withScores.map((p) => p.lighthouse!.bestPractices)),
+    seo:           Math.min(...withScores.map((p) => p.lighthouse!.seo)),
+  } : null
+
+  // CWV only from homepage (subpages rarely have real-user field data)
+  const coreVitals     = homepage?.coreVitals     ?? null
+  const coreVitalsPass = homepage?.coreVitalsPass ?? null
+
+  // Worst (largest) page weight across all pages
+  const weights = pages.map((p) => p.totalPageWeightKb).filter((w): w is number => w !== null)
+  const totalPageWeightKb = weights.length > 0 ? Math.max(...weights) : null
+
+  // Combine opportunities, deduplicate by title, keep worst savings first
+  const seen = new Set<string>()
+  const topOpportunities = pages
+    .flatMap((p) => p.topOpportunities)
+    .sort((a, b) => (b.savingsMs ?? 0) - (a.savingsMs ?? 0))
+    .filter((o) => { if (seen.has(o.title)) return false; seen.add(o.title); return true })
+    .slice(0, 5)
+
+  const perPageScores = pages.map((p) => ({ url: p.url, scores: p.lighthouse }))
+
+  return { lighthouse, coreVitals, coreVitalsPass, totalPageWeightKb, topOpportunities, perPageScores }
 }
 
 async function checkHeaders(url: string): Promise<{ presentCount: number; present: string[] }> {
@@ -86,7 +225,7 @@ function buildDataFileContent(params: {
 }): string {
   const { ai, lighthouse: lh, coreVitals, coreVitalsPass, techStack } = params
 
-  const grades  = ai?.reportCardGrades
+  const grades    = ai?.reportCardGrades
   const perfGrade = grades?.performance    ?? 'F'
   const cwvGrade  = grades?.coreVitals     ?? 'F'
   const leadGrade = grades?.leadCapture    ?? 'F'
@@ -106,7 +245,7 @@ function buildDataFileContent(params: {
 
   const esc = (s: string) => s.replace(/'/g, "\\'").replace(/\n/g, '\\n')
 
-  const notes = ai?.lighthouseNotes
+  const notes       = ai?.lighthouseNotes
   const cmsSafe     = techStack.cms     ? `'${techStack.cms}'`     : 'null'
   const hostingSafe = techStack.hosting ? `'${techStack.hosting}'` : 'null'
   const otherSafe   = `[${techStack.other.map((t) => `'${t}'`).join(', ')}]`
@@ -117,21 +256,14 @@ function buildDataFileContent(params: {
     { primary: '0 of 3', secondary: 'Booking, chatbot, contact form live' },
   ]
 
-  const findings = ai?.diagnosisFindings ?? [
-    { stat: 'TODO', title: 'TODO finding title', body: 'TODO: explanation' },
-  ]
-
-  const plan = ai?.treatmentPlan ?? [
+  const findings = ai?.diagnosisFindings ?? [{ stat: 'TODO', title: 'TODO finding title', body: 'TODO: explanation' }]
+  const plan     = ai?.treatmentPlan     ?? [
     { phaseLabel: 'Phase 1 — Stop the leak',      title: 'TODO', bullets: ['TODO'] },
     { phaseLabel: 'Phase 2 — Fix the foundations', title: 'TODO', bullets: ['TODO'] },
     { phaseLabel: 'Phase 3 — Grow the funnel',     title: 'TODO', bullets: ['TODO'] },
   ]
-
-  const prognosis = ai?.prognosisRows ?? [
-    { today: 'TODO', after: 'TODO', why: 'TODO' },
-  ]
-
-  const services = ai?.services ?? [
+  const prognosis = ai?.prognosisRows ?? [{ today: 'TODO', after: 'TODO', why: 'TODO' }]
+  const services  = ai?.services ?? [
     { title: '24/7 chatbot',          description: 'TODO' },
     { title: 'Lead automation',       description: 'TODO' },
     { title: 'Data entry automation', description: 'TODO' },
@@ -223,56 +355,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'url and slug are required' }, { status: 400 })
   }
 
-  const psKey    = process.env.PAGESPEED_API_KEY
-  const cmsKey   = process.env.WHATCMS_API_KEY
-  const aiKey    = process.env.ANTHROPIC_API_KEY
+  const psKey      = process.env.PAGESPEED_API_KEY
+  const cmsKey     = process.env.WHATCMS_API_KEY
+  const aiKey      = process.env.ANTHROPIC_API_KEY
   const reportDate = new Date().toISOString().split('T')[0]
   const errors: string[] = []
 
-  // Run PageSpeed, headers, site scrape, and WhatCMS all in parallel
-  const [psResult, headersResult, scrapeResult, techResult] = await Promise.allSettled([
-    psKey   ? runPageSpeed(url, psKey)     : Promise.reject(new Error('PAGESPEED_API_KEY not set')),
+  // Discover subpages to scan alongside the homepage
+  const subpages   = psKey ? await findSubpages(url) : []
+  const urlsToScan = [url, ...subpages]
+
+  // Run all PageSpeed calls + headers + scrape + WhatCMS in parallel
+  const [headersResult, scrapeResult, techResult, ...psResults] = await Promise.allSettled([
     checkHeaders(url),
     scrapeWebsite(url),
-    cmsKey  ? runWhatCms(url, cmsKey)      : Promise.resolve<TechStack>({ cms: null, hosting: null, other: [] }),
+    cmsKey ? runWhatCms(url, cmsKey) : Promise.resolve<TechStack>({ cms: null, hosting: null, other: [] }),
+    ...(psKey
+      ? urlsToScan.map((u) => runPageSpeed(u, psKey))
+      : urlsToScan.map(() => Promise.reject(new Error('PAGESPEED_API_KEY not set')))),
   ])
 
-  // Parse PageSpeed
-  let lighthouse: { performance: number; accessibility: number; bestPractices: number; seo: number } | null = null
-  let coreVitals: CoreVital[] | null = null
-  let coreVitalsPass: boolean | null = null
-  let totalPageWeightKb: number | null = null
-  let topOpportunities: Array<{ title: string; savingsKb: number | null; savingsMs: number | null }> = []
+  // Parse each PageSpeed result
+  const parsedPages: ParsedPage[] = urlsToScan.map((u, i) => {
+    const result = psResults[i]
+    if (result.status === 'fulfilled') return parsePageSpeedJson(u, result.value)
+    errors.push(`PageSpeed (${new URL(u).pathname || '/'}): ${(result as PromiseRejectedResult).reason?.message ?? 'unknown error'}`)
+    return { url: u, lighthouse: null, coreVitals: null, coreVitalsPass: null, totalPageWeightKb: null, topOpportunities: [] }
+  })
 
-  if (psResult.status === 'fulfilled') {
-    const json = psResult.value
-    const cats = json.lighthouseResult?.categories ?? {}
-    const auds = json.lighthouseResult?.audits ?? {}
-    const score = (key: string) => Math.round((cats[key]?.score ?? 0) * 100)
-    lighthouse = { performance: score('performance'), accessibility: score('accessibility'), bestPractices: score('best-practices'), seo: score('seo') }
-
-    const cwv   = json.loadingExperience ?? {}
-    const field = cwv.metrics ?? {}
-    coreVitalsPass = cwv.overall_category ? cwv.overall_category === 'FAST' : null
-
-    coreVitals = [
-      { metric: 'LCP',  displayValue: formatVitalValue(field.LARGEST_CONTENTFUL_PAINT_MS?.percentile,     'LCP'),  status: vitalStatus(field.LARGEST_CONTENTFUL_PAINT_MS?.category)     },
-      { metric: 'TTFB', displayValue: formatVitalValue(field.EXPERIMENTAL_TIME_TO_FIRST_BYTE?.percentile, 'TTFB'), status: vitalStatus(field.EXPERIMENTAL_TIME_TO_FIRST_BYTE?.category) },
-      { metric: 'FCP',  displayValue: formatVitalValue(field.FIRST_CONTENTFUL_PAINT_MS?.percentile,       'FCP'),  status: vitalStatus(field.FIRST_CONTENTFUL_PAINT_MS?.category)       },
-      { metric: 'CLS',  displayValue: formatVitalValue(field.CUMULATIVE_LAYOUT_SHIFT_SCORE?.percentile,   'CLS'),  status: vitalStatus(field.CUMULATIVE_LAYOUT_SHIFT_SCORE?.category)   },
-      { metric: 'INP',  displayValue: formatVitalValue(field.INTERACTION_TO_NEXT_PAINT?.percentile,       'INP'),  status: vitalStatus(field.INTERACTION_TO_NEXT_PAINT?.category)       },
-    ] as CoreVital[]
-
-    const totalBytes: number | undefined = auds['total-byte-weight']?.numericValue
-    totalPageWeightKb = totalBytes ? Math.round(totalBytes / 1024) : null
-    topOpportunities = Object.values(auds as Record<string, { details?: { type: string; overallSavingsMs?: number; overallSavingsBytes?: number }; title?: string }>)
-      .filter((a) => a?.details?.type === 'opportunity' && (a.details.overallSavingsMs ?? 0) > 0)
-      .sort((a, b) => (b.details?.overallSavingsMs ?? 0) - (a.details?.overallSavingsMs ?? 0))
-      .slice(0, 3)
-      .map((a) => ({ title: a.title ?? 'Unknown', savingsKb: a.details?.overallSavingsBytes ? Math.round(a.details.overallSavingsBytes / 1024) : null, savingsMs: a.details?.overallSavingsMs ? Math.round(a.details.overallSavingsMs) : null }))
-  } else {
-    errors.push(`PageSpeed: ${(psResult as PromiseRejectedResult).reason?.message ?? 'unknown error'}`)
-  }
+  // Aggregate: worst scores across all pages
+  const { lighthouse, coreVitals, coreVitalsPass, totalPageWeightKb, topOpportunities, perPageScores } = aggregatePages(parsedPages)
 
   const secHeaders = headersResult.status === 'fulfilled' ? headersResult.value : { presentCount: -1, present: [] }
   if (headersResult.status === 'rejected') errors.push('Security header check failed')
@@ -282,7 +394,7 @@ export async function GET(request: NextRequest) {
 
   const techStack = techResult.status === 'fulfilled' ? techResult.value : { cms: null, hosting: null, other: [] }
 
-  // AI generation — runs even if site scrape failed (just with less context)
+  // AI generation
   let ai: Awaited<ReturnType<typeof generateReportContent>> | null = null
   if (!aiKey) {
     errors.push('ANTHROPIC_API_KEY not set — narrative fields left as TODO')
@@ -292,6 +404,7 @@ export async function GET(request: NextRequest) {
         businessName: name, url, site,
         lighthouse, coreVitals, coreVitalsPass,
         totalPageWeightKb, topOpportunities, secHeaders,
+        pagesScanned: urlsToScan, perPageScores,
       })
     } catch (err) {
       errors.push(`AI generation failed: ${(err as Error).message}`)
@@ -303,20 +416,12 @@ export async function GET(request: NextRequest) {
     ai, lighthouse, coreVitals, coreVitalsPass, techStack,
   })
 
-  // What still needs a human (keep this list empty if fully automated)
   const manualTodos: string[] = []
-  if (!ai) {
-    manualTodos.push('AI generation failed — narrative fields are placeholders. Check ANTHROPIC_API_KEY is set in Vercel env vars.')
-  }
+  if (!ai) manualTodos.push('AI generation failed — check ANTHROPIC_API_KEY in Vercel env vars.')
 
-  // Publish to GitHub (triggers Vercel redeploy automatically)
   const publishResult = await publishClient(slug, dataFileContent, name)
-  if (!publishResult.success) {
-    errors.push(`GitHub publish failed: ${publishResult.error}`)
-  }
+  if (!publishResult.success) errors.push(`GitHub publish failed: ${publishResult.error}`)
 
-  // VERCEL_PROJECT_PRODUCTION_URL is the stable production hostname (e.g. agency-audits.vercel.app).
-  // VERCEL_URL is deployment-specific and won't have the new page until the triggered rebuild completes.
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL
   const vercelUrl = productionHost
     ? `https://${productionHost}/clients/${slug}`
@@ -324,6 +429,8 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     slug, url, reportDate,
+    pagesScanned: urlsToScan,
+    perPageScores,
     lighthouse, coreVitals, coreVitalsPass, totalPageWeightKb,
     topOpportunities, techStack, secHeaders,
     site: site ? { title: site.title, addressText: site.addressText, reviewRating: site.reviewRating, reviewCount: site.reviewCount, leadCaptureCount: site.leadCaptureCount, leadCaptureMechanisms: site.leadCaptureMechanisms } : null,

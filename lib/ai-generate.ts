@@ -131,10 +131,12 @@ export async function generateReportContent(params: {
   totalPageWeightKb: number | null
   topOpportunities: Array<{ title: string; savingsKb: number | null; savingsMs: number | null }>
   secHeaders:       { presentCount: number; present: string[] }
+  pagesScanned:     string[]
+  perPageScores:    Array<{ url: string; scores: { performance: number; accessibility: number; bestPractices: number; seo: number } | null }>
 }): Promise<AIGeneratedContent> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const { businessName, url, site, lighthouse: lh, coreVitals, coreVitalsPass, totalPageWeightKb, topOpportunities, secHeaders } = params
+  const { businessName, url, site, lighthouse: lh, coreVitals, coreVitalsPass, totalPageWeightKb, topOpportunities, secHeaders, pagesScanned, perPageScores } = params
 
   const domain = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
@@ -181,6 +183,15 @@ OVERALL CWV ASSESSMENT: ${coreVitalsPass === true ? 'PASSED' : coreVitalsPass ==
 
 SECURITY HEADERS: ${secHeaders.presentCount >= 0 ? `${secHeaders.presentCount} of 6 present` : 'check failed'}
 ${secHeaders.present.length > 0 ? `Present: ${secHeaders.present.join(', ')}` : ''}
+
+PAGES SCANNED (${pagesScanned.length} total — scores above are the worst across all pages):
+${perPageScores.map((p) => {
+  const s = p.scores
+  const path = (() => { try { return new URL(p.url).pathname || '/' } catch { return p.url } })()
+  return s
+    ? `- ${path}: Performance ${s.performance}, Accessibility ${s.accessibility}, Best Practices ${s.bestPractices}, SEO ${s.seo}`
+    : `- ${path}: scan failed`
+}).join('\n')}
 
 WEBSITE TEXT SNIPPET (first 4000 chars of visible text):
 ${site?.bodySnippet ?? 'site could not be fetched — work from the scores and URL alone'}
