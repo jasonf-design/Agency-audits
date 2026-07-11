@@ -5,6 +5,7 @@ import { data as deepcar } from '@/clients/deepcar/data'
 import { data as smileDental } from '@/clients/smile-dental/data'
 import { data as harleyPrivate } from '@/clients/harley-private/data'
 import { data as harleyDental } from '@/clients/harley-dental/data'
+import { data as albionSports } from '@/clients/albion-sports/data'
 import { data as eastMidlands } from '@/territories/east-midlands'
 
 // ── Client registry ───────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ export const allClients: ClientData[] = [
   smileDental,
   harleyPrivate,
   harleyDental,
+  albionSports,
 ]
 
 // ── Territory registry ────────────────────────────────────────────────────────
