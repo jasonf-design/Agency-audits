@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { AGENCY_NAME } from '@/lib/brand'
 
@@ -43,16 +43,14 @@ function StatusDot({ status }: { status: string }) {
 const VITAL_FRIENDLY: Record<string, { name: string; plain: string }> = {
   LCP:  { name: 'Main content loads',  plain: 'How fast the big image or headline appears. Under 2.5s = good.' },
   TTFB: { name: 'Server responds',     plain: 'Time before the server starts sending data. Slow TTFB drags everything else down.' },
-  FCP:  { name: 'Something appears',   plain: 'When anything first shows on screen. Long gap → patients assume the site is broken.' },
+  FCP:  { name: 'Something appears',   plain: 'When anything first shows on screen. Long gap → visitors assume the site is broken.' },
   CLS:  { name: 'Page stays steady',   plain: 'Whether elements jump around while loading. 0 is perfect.' },
   INP:  { name: 'Responds to taps',    plain: 'Delay between tapping a button and the page reacting.' },
 }
 
-export default function AdminGeneratePage() {
+function GeneratePage() {
   const [url, setUrl]           = useState('')
   const [name, setName]         = useState('')
-  const [territory, setTerritory] = useState('East Midlands')
-  const [referredBy, setReferredBy] = useState('James Allen')
   const [loading, setLoading]   = useState(false)
   const [phase, setPhase]       = useState('')
   const [result, setResult]     = useState<AuditResult | null>(null)
@@ -61,14 +59,34 @@ export default function AdminGeneratePage() {
   const [pageReady, setPageReady] = useState(false)
   const textareaRef             = useRef<HTMLTextAreaElement>(null)
   const pollRef                 = useRef<ReturnType<typeof setInterval> | null>(null)
+  const leadIdRef               = useRef<string | null>(null)
+
+  useEffect(() => {
+    const params  = new URLSearchParams(window.location.search)
+    const company = params.get('company')
+    const website = params.get('website')
+    const leadId  = params.get('leadId')
+    if (company) setName(company)
+    if (website) setUrl(website)
+    if (leadId)  leadIdRef.current = leadId
+  }, [])
 
   function slugify(n: string) {
     return n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   }
 
+  function normaliseUrl(raw: string): string {
+    const trimmed = raw.trim()
+    if (!trimmed) return trimmed
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
+    return `https://${trimmed}`
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!url || !name) return
+    const normUrl = normaliseUrl(url)
+    if (normUrl !== url) setUrl(normUrl)
     setLoading(true)
     setResult(null)
     setError(null)
@@ -78,13 +96,23 @@ export default function AdminGeneratePage() {
     setPhase('Step 1 of 3 — Running Google speed test (20–60 seconds)…')
 
     try {
-      const params = new URLSearchParams({ url, slug, name, territory, referredBy })
+      const params = new URLSearchParams({ url: normUrl, slug, name })
       const res = await fetch(`/api/audit?${params}`)
       setPhase('Step 2 of 3 — Writing report with AI…')
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       const data: AuditResult = await res.json()
       setResult(data)
       setPageReady(false)
+
+      // Save audit_slug back to the pipeline record if launched from a lead
+      if (data.published && leadIdRef.current) {
+        fetch('/api/leads/pipeline', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId: leadIdRef.current, audit_slug: data.slug, stage: 'audited' }),
+        }).catch(() => {})
+      }
+
       // Poll every 5s until Vercel's rebuild is done and the page returns 200
       if (data.published && data.publishedUrl) {
         if (pollRef.current) clearInterval(pollRef.current)
@@ -146,7 +174,7 @@ export default function AdminGeneratePage() {
             {AGENCY_NAME} — Run a new audit
           </h1>
           <p style={{ color: 'var(--ink-soft)', marginTop: 8, fontSize: 15 }}>
-            Enter the practice URL and we'll pull the data from Google automatically.
+            Enter the business URL and we'll pull the data from Google automatically.
             You'll get a ready-to-use data file with everything that could be automated already filled in.
           </p>
         </div>
@@ -155,20 +183,12 @@ export default function AdminGeneratePage() {
         <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 14, padding: 28, border: '1px solid var(--stone-line)', marginBottom: 32 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
             <div>
-              {label('Practice website URL *')}
-              {input({ type: 'url', value: url, onChange: (e) => setUrl(e.target.value), placeholder: 'https://example-dental.co.uk', required: true })}
+              {label('Business website URL *')}
+              {input({ type: 'text', value: url, onChange: (e) => setUrl(e.target.value), placeholder: 'eko19.com', required: true })}
             </div>
             <div>
-              {label('Practice name *')}
-              {input({ type: 'text', value: name, onChange: (e) => setName(e.target.value), placeholder: 'Example Dental', required: true })}
-            </div>
-            <div>
-              {label('Territory')}
-              {input({ type: 'text', value: territory, onChange: (e) => setTerritory(e.target.value), placeholder: 'East Midlands' })}
-            </div>
-            <div>
-              {label('Referred by')}
-              {input({ type: 'text', value: referredBy, onChange: (e) => setReferredBy(e.target.value), placeholder: 'James Allen' })}
+              {label('Business name *')}
+              {input({ type: 'text', value: name, onChange: (e) => setName(e.target.value), placeholder: 'Barlow Cars', required: true })}
             </div>
           </div>
 
@@ -373,6 +393,22 @@ export default function AdminGeneratePage() {
               </div>
             )}
 
+            {/* Back to lead link — shown when audit was launched from a pipeline lead */}
+            {leadIdRef.current && (
+              <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#555' }}>
+                  Audit linked to pipeline record. Stage set to Audited.
+                </div>
+                <Link href={`/admin/leads/${leadIdRef.current}`} style={{
+                  background: '#7c3aed22', border: '1px solid #7c3aed44', color: '#a78bfa',
+                  fontFamily: 'var(--font-space)', fontSize: 13, padding: '8px 14px',
+                  borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap',
+                }}>
+                  ← Back to lead
+                </Link>
+              </div>
+            )}
+
             {/* Published confirmation */}
             {result.published && result.publishedUrl ? (
               <div style={{ background: 'var(--good)', borderRadius: 14, padding: 28, textAlign: 'center' }}>
@@ -449,5 +485,13 @@ export default function AdminGeneratePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function AdminGeneratePage() {
+  return (
+    <Suspense>
+      <GeneratePage />
+    </Suspense>
   )
 }
