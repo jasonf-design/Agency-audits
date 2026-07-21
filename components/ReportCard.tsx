@@ -14,27 +14,27 @@ const GRADE_COLOR: Record<ReturnType<typeof gradeColour>, string> = {
 const CARD_TIPS: Record<string, { title: string; body: string }> = {
   'Performance': {
     title: 'Overall website speed score',
-    body:  "A single number from 0 to 100 measuring how fast the page loads on a mobile phone. Google's benchmark: 90+ is good, below 50 is a serious problem. Slow sites rank lower and lose patients before the page even opens.",
+    body:  "A single number from 0 to 100 measuring how fast the page loads on a mobile phone. Google's benchmark: 90+ is good, below 50 is a serious problem. Slow sites rank lower and lose potential customers before the page even opens.",
   },
   'Core Web Vitals': {
     title: "Google's official speed test",
     body:  "Google runs three specific speed measurements and uses the results to decide where to rank websites in search results. A failing grade here directly hurts rankings on Google.",
   },
   'Lead capture': {
-    title: 'Ways to capture a new patient enquiry',
-    body:  "Counts how many ways a potential patient can get in touch without picking up the phone — online booking, a chatbot, a contact form. Every missing option is lost business outside office hours.",
+    title: 'Ways to capture a new enquiry',
+    body:  "Counts how many ways a potential customer can get in touch without picking up the phone — online booking, a chatbot, a contact form. Every missing option is lost business outside office hours.",
   },
   'Security headers': {
     title: 'Protection against web attacks',
-    body:  "Behind-the-scenes settings that protect the website and its visitors from common online threats. Invisible to patients, but browsers and Google both check for them.",
+    body:  "Behind-the-scenes settings that protect the website and its visitors from common online threats. Invisible to visitors, but browsers and Google both check for them.",
   },
   'Accessibility': {
-    title: 'How usable it is for every patient',
-    body:  "Checks whether the site works for patients who use screen readers, have visual impairments, or navigate by keyboard. Also covers colour contrast — can older patients read the text comfortably? Google factors this into rankings.",
+    title: 'How usable it is for every visitor',
+    body:  "Checks whether the site works for people who use screen readers, have visual impairments, or navigate by keyboard. Also covers colour contrast and text readability. Google factors this into rankings.",
   },
   'Best practices': {
     title: 'Following modern web standards',
-    body:  "Whether the site uses up-to-date, secure, error-free code. Doesn't directly affect patients, but signals to Google and browsers that the site is trustworthy.",
+    body:  "Whether the site uses up-to-date, secure, error-free code. Doesn't directly affect visitors, but signals to Google and browsers that the site is trustworthy.",
   },
   'On-page SEO': {
     title: 'How well Google can read the site',
@@ -42,13 +42,13 @@ const CARD_TIPS: Record<string, { title: string; body: string }> = {
   },
   'Reputation': {
     title: 'Google review rating and volume',
-    body:  "Based on the practice's Google star rating and number of reviews. Strong reviews are one of the biggest factors in a patient choosing one dentist over another from a search results page.",
+    body:  "Based on the business's Google star rating and number of reviews. Strong reviews are one of the biggest factors in a customer choosing one business over another from a search results page.",
   },
 }
 
 interface ReportCardProps {
   items: ReportCardItem[]
-  patientLabel: string
+  patientLabel: string  // kept for backward compat — now used as the "CLIENT:" label
 }
 
 export default function ReportCard({ items, patientLabel }: ReportCardProps) {
@@ -79,7 +79,7 @@ export default function ReportCard({ items, patientLabel }: ReportCardProps) {
         position: 'absolute', top: 16, right: 24,
         fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em', color: '#a89e8e',
       }}>
-        PATIENT: {patientLabel}
+        CLIENT: {patientLabel}
       </div>
 
       <div style={{ fontFamily: 'var(--font-space)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a89e8e', marginBottom: 22 }}>
