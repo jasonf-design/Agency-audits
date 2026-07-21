@@ -14,7 +14,7 @@ const SECURITY_HEADERS = [
   'referrer-policy',
 ]
 
-const SUBPAGE_KEYWORDS = ['service', 'treatment', 'contact', 'booking', 'implant', 'invisalign', 'cosmetic', 'emergency', 'about', 'price', 'fee']
+const SUBPAGE_KEYWORDS = ['service', 'contact', 'booking', 'about', 'price', 'fee', 'product', 'quote', 'enquiry', 'enquire']
 
 function vitalStatus(rating: string | undefined): VitalStatus {
   if (!rating) return 'no-data'
@@ -36,6 +36,48 @@ function subpageScore(pathname: string): number {
   return idx === -1 ? 999 : idx
 }
 
+function isHtmlPage(url: string): boolean {
+  try {
+    const ext = new URL(url).pathname.split('.').pop()?.toLowerCase()
+    return !ext || ext === 'html' || ext === 'htm' || ext === 'php' || ext === 'asp' || ext === 'aspx'
+  } catch { return false }
+}
+
+async function parseSitemapForPages(xml: string, origin: string, baseUrl: string): Promise<string[]> {
+  const isInternal = (href: string) => {
+    try { return new URL(href).hostname === new URL(origin).hostname } catch { return false }
+  }
+
+  // Sitemap index: contains <sitemap> elements pointing to child sitemaps
+  const isSitemapIndex = /<sitemap[\s>]/i.test(xml)
+  if (isSitemapIndex) {
+    // Fetch the first child sitemap and parse that instead
+    const childUrls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+      .map((m) => m[1].trim())
+      .filter((u) => u.endsWith('.xml'))
+      .slice(0, 3)
+
+    for (const childUrl of childUrls) {
+      try {
+        const res = await fetch(childUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TrabeloAuditBot/1.0)' },
+          signal: AbortSignal.timeout(6000),
+        })
+        if (!res.ok) continue
+        const childXml = await res.text()
+        const pages = await parseSitemapForPages(childXml, origin, baseUrl)
+        if (pages.length > 0) return pages
+      } catch { /* try next */ }
+    }
+    return []
+  }
+
+  // Regular sitemap: extract <loc> entries that are actual HTML pages
+  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+    .map((m) => m[1].trim())
+    .filter((loc) => isInternal(loc) && isHtmlPage(loc) && new URL(loc).pathname !== '/' && loc !== baseUrl)
+}
+
 async function findSubpages(baseUrl: string): Promise<string[]> {
   const origin = new URL(baseUrl).origin
   const isInternal = (href: string) => {
@@ -45,14 +87,12 @@ async function findSubpages(baseUrl: string): Promise<string[]> {
   // Try sitemap.xml first
   try {
     const res = await fetch(`${origin}/sitemap.xml`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SozeroAuditBot/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TrabeloAuditBot/1.0)' },
       signal: AbortSignal.timeout(8000),
     })
     if (res.ok) {
-      const xml = await res.text()
-      const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-        .map((m) => m[1].trim())
-        .filter((loc) => isInternal(loc) && new URL(loc).pathname !== '/' && loc !== baseUrl)
+      const xml  = await res.text()
+      const locs = await parseSitemapForPages(xml, origin, baseUrl)
       if (locs.length > 0) {
         return locs
           .sort((a, b) => subpageScore(new URL(a).pathname) - subpageScore(new URL(b).pathname))
@@ -61,22 +101,37 @@ async function findSubpages(baseUrl: string): Promise<string[]> {
     }
   } catch { /* fall through */ }
 
-  // Fallback: extract internal links from the homepage
+  // Fallback: extract internal links from the homepage HTML
   try {
     const res = await fetch(baseUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SozeroAuditBot/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TrabeloAuditBot/1.0)' },
       signal: AbortSignal.timeout(10000),
     })
-    const html = await res.text()
+    const html  = await res.text()
     const hrefs = [...html.matchAll(/href=["']([^"'#?]+)["']/g)].map((m) => m[1])
     const links = hrefs
       .map((h) => { try { return new URL(h, origin).href } catch { return null } })
-      .filter((h): h is string => h !== null && isInternal(h) && new URL(h).pathname !== '/' && h !== baseUrl)
+      .filter((h): h is string => h !== null && isInternal(h) && isHtmlPage(h) && new URL(h).pathname !== '/' && h !== baseUrl)
     const unique = [...new Set(links)]
     return unique
       .sort((a, b) => subpageScore(new URL(a).pathname) - subpageScore(new URL(b).pathname))
       .slice(0, 2)
   } catch { return [] }
+}
+
+async function resolveCanonicalUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TrabeloAuditBot/1.0)' },
+      signal: AbortSignal.timeout(8000),
+    })
+    // res.url is the final URL after all redirects
+    return res.url || url
+  } catch {
+    return url
+  }
 }
 
 async function runPageSpeed(url: string, apiKey: string) {
@@ -214,8 +269,6 @@ function buildDataFileContent(params: {
   slug: string
   url: string
   businessName: string
-  territory: string
-  referredBy: string
   reportDate: string
   ai: Awaited<ReturnType<typeof generateReportContent>> | null
   lighthouse: { performance: number; accessibility: number; bestPractices: number; seo: number } | null
@@ -271,6 +324,7 @@ function buildDataFileContent(params: {
     { title: 'Security hardening',    description: 'TODO' },
     { title: 'SEO & content',         description: 'TODO' },
   ]
+  const aiRecs = ai?.aiRecommendations ?? []
 
   return `import type { ClientData } from '@/lib/types'
 
@@ -279,9 +333,6 @@ export const data: ClientData = {
   businessName: '${esc(params.businessName)}',
   url: '${params.url}',
   reportDate: '${params.reportDate}',
-
-  territory: '${params.territory}',
-  referredBy: '${params.referredBy}',
 
   heroHeadline: {
     before:   '${esc(ai?.heroHeadline.before ?? 'TODO: Headline before emphasis. ')}',
@@ -335,6 +386,10 @@ ${prognosis.map((r) => `    { today: '${esc(r.today)}', after: '${esc(r.after)}'
 ${services.map((s) => `    { title: '${esc(s.title)}', description: '${esc(s.description)}' },`).join('\n')}
   ],
 
+  aiRecommendations: [
+${aiRecs.map((r) => `    { tool: '${esc(r.tool)}', impact: '${r.impact}', why: '${esc(r.why)}' },`).join('\n')}
+  ],
+
   techStack: {
     cms:     ${cmsSafe},
     hosting: ${hostingSafe},
@@ -345,11 +400,9 @@ ${services.map((s) => `    { title: '${esc(s.title)}', description: '${esc(s.des
 }
 
 export async function GET(request: NextRequest) {
-  const url        = request.nextUrl.searchParams.get('url')
-  const slug       = request.nextUrl.searchParams.get('slug')
-  const name       = request.nextUrl.searchParams.get('name') ?? 'TODO'
-  const territory  = request.nextUrl.searchParams.get('territory') ?? 'direct'
-  const referredBy = request.nextUrl.searchParams.get('referredBy') ?? 'direct'
+  const url  = request.nextUrl.searchParams.get('url')
+  const slug = request.nextUrl.searchParams.get('slug')
+  const name = request.nextUrl.searchParams.get('name') ?? 'TODO'
 
   if (!url || !slug) {
     return NextResponse.json({ error: 'url and slug are required' }, { status: 400 })
@@ -361,15 +414,18 @@ export async function GET(request: NextRequest) {
   const reportDate = new Date().toISOString().split('T')[0]
   const errors: string[] = []
 
+  // Resolve the canonical URL (follows www/non-www and https redirects)
+  const canonicalUrl = await resolveCanonicalUrl(url)
+
   // Discover subpages to scan alongside the homepage
-  const subpages   = psKey ? await findSubpages(url) : []
-  const urlsToScan = [url, ...subpages]
+  const subpages   = psKey ? await findSubpages(canonicalUrl) : []
+  const urlsToScan = [canonicalUrl, ...subpages]
 
   // Run all PageSpeed calls + headers + scrape + WhatCMS in parallel
   const [headersResult, scrapeResult, techResult, ...psResults] = await Promise.allSettled([
-    checkHeaders(url),
-    scrapeWebsite(url),
-    cmsKey ? runWhatCms(url, cmsKey) : Promise.resolve<TechStack>({ cms: null, hosting: null, other: [] }),
+    checkHeaders(canonicalUrl),
+    scrapeWebsite(canonicalUrl),
+    cmsKey ? runWhatCms(canonicalUrl, cmsKey) : Promise.resolve<TechStack>({ cms: null, hosting: null, other: [] }),
     ...(psKey
       ? urlsToScan.map((u) => runPageSpeed(u, psKey))
       : urlsToScan.map(() => Promise.reject(new Error('PAGESPEED_API_KEY not set')))),
@@ -412,7 +468,7 @@ export async function GET(request: NextRequest) {
   }
 
   const dataFileContent = buildDataFileContent({
-    slug, url, businessName: name, territory, referredBy, reportDate,
+    slug, url, businessName: name, reportDate,
     ai, lighthouse, coreVitals, coreVitalsPass, techStack,
   })
 
