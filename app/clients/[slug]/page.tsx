@@ -10,6 +10,7 @@ import DiagnosisSection from '@/components/DiagnosisSection'
 import TreatmentPlanSection from '@/components/TreatmentPlanSection'
 import PrognosisSection from '@/components/PrognosisSection'
 import ServicesSection from '@/components/ServicesSection'
+import AiRecommendationsSection from '@/components/AiRecommendationsSection'
 import CtaSection from '@/components/CtaSection'
 import SiteFooter from '@/components/SiteFooter'
 
@@ -44,6 +45,7 @@ export default async function ClientPage({ params }: { params: Promise<{ slug: s
       <TreatmentPlanSection data={client} />
       <PrognosisSection data={client} />
       <ServicesSection data={client} />
+      <AiRecommendationsSection data={client} />
       <CtaSection businessName={client.businessName} />
       <SiteFooter reportDate={client.reportDate} />
     </>
