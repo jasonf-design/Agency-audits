@@ -8,6 +8,7 @@ import { data as harleyDental } from '@/clients/harley-dental/data'
 import { data as albionSports } from '@/clients/albion-sports/data'
 import { data as eko19 } from '@/clients/eko19/data'
 import { data as s10Dental } from '@/clients/s10-dental/data'
+import { data as barlowCars } from '@/clients/barlow-cars/data'
 import { data as eastMidlands } from '@/territories/east-midlands'
 
 // ── Client registry ───────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ export const allClients: ClientData[] = [
   albionSports,
   eko19,
   s10Dental,
+  barlowCars,
 ]
 
 // ── Territory registry ────────────────────────────────────────────────────────
