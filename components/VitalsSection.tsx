@@ -35,27 +35,27 @@ const VITAL_META: Record<CoreVital['metric'], VitalMeta> = {
   LCP: {
     friendlyName: 'Main content loads',
     tipTitle:     'How fast the page fully appears',
-    tipBody:      "Measures how long the main content — usually the big image or headline — takes to appear. Google wants this under 2.5 seconds. Slower than that and patients start to wonder if the site is broken.",
+    tipBody:      "Measures how long the main content — usually the big image or headline — takes to appear. Google wants this under 2.5 seconds. Slower than that and visitors start to wonder if the site is broken.",
   },
   TTFB: {
     friendlyName: 'Server responds',
     tipTitle:     'How quickly the server wakes up',
-    tipBody:      "The time from the moment a patient clicks a link to when the server starts sending back the page. If this is slow, everything else is slow — like a receptionist taking 2 minutes to pick up the phone before the conversation can start.",
+    tipBody:      "The time from the moment a visitor clicks a link to when the server starts sending back the page. If this is slow, everything else is slow — like putting someone on hold before the conversation even starts.",
   },
   FCP: {
     friendlyName: 'Something appears',
     tipTitle:     'When anything first shows on screen',
-    tipBody:      "How long before the patient sees anything at all — even a loading indicator. If this takes too long, most people assume the site is down and press back.",
+    tipBody:      "How long before a visitor sees anything at all — even a loading indicator. If this takes too long, most people assume the site is down and press back.",
   },
   CLS: {
     friendlyName: 'Page stays steady',
     tipTitle:     'Whether the page jumps around',
-    tipBody:      "Measures how much the page shifts while it's loading. A score of 0 is perfect — nothing moves. A high score means a patient tries to tap a button and misses because it jumped out from under their finger.",
+    tipBody:      "Measures how much the page shifts while it's loading. A score of 0 is perfect — nothing moves. A high score means a visitor tries to tap a button and misses because it jumped out from under their finger.",
   },
   INP: {
     friendlyName: 'Responds to taps',
     tipTitle:     'How fast the page reacts',
-    tipBody:      "Measures the delay between a patient tapping something and the page responding. A sluggish response feels like the site is ignoring them.",
+    tipBody:      "Measures the delay between a visitor tapping something and the page responding. A sluggish response feels like the site is ignoring them.",
   },
 }
 
@@ -87,7 +87,7 @@ export default function VitalsSection({ data }: VitalsSectionProps) {
           01 · Speed test
         </div>
         <h2 style={{ fontFamily: 'var(--font-space)', fontWeight: 600, fontSize: 'clamp(26px, 3.4vw, 38px)', maxWidth: 640, marginBottom: 14, letterSpacing: '-0.01em' }}>
-          Real patients, real mobile phones, real result.
+          Real visitors, real mobile phones, real result.
         </h2>
         <p style={{ maxWidth: 600, color: '#c9c0b2', fontSize: 17, marginBottom: 8 }}>
           This isn't a lab estimate — it's Google's own record of what actual visitors experienced on their phones over the last 28 days.
@@ -110,7 +110,7 @@ export default function VitalsSection({ data }: VitalsSectionProps) {
               light
               term="Core Web Vitals"
               title="Google's official speed scorecard"
-              body="Google runs three specific speed tests and uses the results to decide where to rank websites in search results. Failing this assessment pushes the site further down in Google — meaning patients searching 'dentist Sheffield' are less likely to find it."
+              body="Google runs three specific speed tests and uses the results to decide where to rank websites in search results. Failing this assessment pushes the site further down in Google — meaning potential customers are less likely to find it."
             />
           </div>
         </RevealDiv>
