@@ -95,6 +95,42 @@ export interface PublishResult {
   alreadyExisted: boolean
 }
 
+export async function publishProposalHtml(
+  slug: string,
+  html: string,
+  businessName: string,
+): Promise<PublishResult> {
+  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_OWNER || !process.env.GITHUB_REPO) {
+    return { success: false, error: 'GitHub env vars not set', alreadyExisted: false }
+  }
+  try {
+    const path     = `public/proposals/${slug}.html`
+    const existing = await getFile(path)
+    await putFile(path, html, `proposal: ${businessName} (${slug})`, existing?.sha)
+    return { success: true, alreadyExisted: existing !== null }
+  } catch (err) {
+    return { success: false, error: (err as Error).message, alreadyExisted: false }
+  }
+}
+
+export async function publishConceptHtml(
+  slug: string,
+  html: string,
+  businessName: string,
+): Promise<PublishResult> {
+  if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_OWNER || !process.env.GITHUB_REPO) {
+    return { success: false, error: 'GitHub env vars not set', alreadyExisted: false }
+  }
+  try {
+    const path     = `public/concepts/${slug}.html`
+    const existing = await getFile(path)
+    await putFile(path, html, `concept: ${businessName} (${slug})`, existing?.sha)
+    return { success: true, alreadyExisted: existing !== null }
+  } catch (err) {
+    return { success: false, error: (err as Error).message, alreadyExisted: false }
+  }
+}
+
 export async function publishClient(
   slug: string,
   dataFileContent: string,
