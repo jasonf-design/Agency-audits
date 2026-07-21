@@ -46,7 +46,7 @@ export default function PrognosisSection({ data }: PrognosisSectionProps) {
           color: '#7a5a13',
           marginBottom: 32,
         }}>
-          These are illustrative, based on patterns from similar practices — not {data.businessName}'s measured traffic yet.
+          These are illustrative, based on patterns from similar businesses — not {data.businessName}'s measured traffic yet.
         </RevealDiv>
 
         <RevealDiv style={{ overflowX: 'auto', background: '#fff', borderRadius: 14, padding: '8px 8px 0' }}>
