@@ -22,19 +22,19 @@ const GAUGE_META: GaugeMeta[] = [
     label:    'Speed score',
     tipTerm:  'Performance',
     tipTitle: 'How fast the page loads overall',
-    tipBody:  "A single number from 0 to 100 summing up everything about how fast — or slow — the page is. Google's benchmark: 90+ is good, below 50 is a serious problem. Most patients are on a phone with a typical mobile connection.",
+    tipBody:  "A single number from 0 to 100 summing up everything about how fast — or slow — the page is. Google's benchmark: 90+ is good, below 50 is a serious problem. Most visitors are on a phone with a typical mobile connection.",
   },
   {
     label:    'Usability',
     tipTerm:  'Accessibility',
     tipTitle: 'How usable it is for everyone',
-    tipBody:  "Checks whether the site works for patients who use screen readers, have visual impairments, navigate by keyboard, or rely on assistive technology. It also covers colour contrast — can older patients read the text comfortably?",
+    tipBody:  "Checks whether the site works for people who use screen readers, have visual impairments, navigate by keyboard, or rely on assistive technology. It also covers colour contrast and text readability.",
   },
   {
     label:    'Technical health',
     tipTerm:  'Best Practices',
     tipTitle: 'Whether the site follows modern web standards',
-    tipBody:  "Checks for things browsers and search engines expect to see: secure connections, no errors in the console, no outdated code. Issues here don't always affect patients directly but they do signal to Google that the site is well-maintained.",
+    tipBody:  "Checks for things browsers and search engines expect to see: secure connections, no errors in the console, no outdated code. Issues here don't always affect visitors directly but they do signal to Google that the site is well-maintained.",
   },
   {
     label:    'Google-readability',
@@ -80,7 +80,7 @@ export default function LighthouseSection({ data }: LighthouseSectionProps) {
           Four tests, scored out of 100.
         </h2>
         <p style={{ maxWidth: 600, color: 'var(--ink-soft)', fontSize: 17, marginBottom: 44 }}>
-          Run on a mobile phone with a typical connection — the same conditions most of their patients are actually browsing in.
+          Run on a mobile phone with a typical connection — the same conditions most visitors are actually browsing in.
         </p>
 
         <div ref={ref} className="reveal" style={{
