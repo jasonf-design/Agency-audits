@@ -28,10 +28,10 @@ export default function ServicesSection({ data }: ServicesSectionProps) {
           06 · What we'd handle
         </div>
         <h2 style={{ fontFamily: 'var(--font-space)', fontWeight: 600, fontSize: 'clamp(26px, 3.4vw, 38px)', maxWidth: 640, marginBottom: 14, letterSpacing: '-0.01em' }}>
-          The full course of treatment.
+          The full scope of work.
         </h2>
         <p style={{ maxWidth: 600, color: 'var(--ink-soft)', fontSize: 17, marginBottom: 44 }}>
-          Same approach we've already built and proven for other clients — applied to this site and patient journey.
+          Same approach we've already built and proven for other clients — applied to this site and customer journey.
         </p>
 
         <div ref={ref} className="reveal" style={{
