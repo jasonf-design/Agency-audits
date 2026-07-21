@@ -1,6 +1,5 @@
 import type { ClientData } from './types'
-import { data as barlowCars } from '@/clients/barlow-cars/data'
 
-export const allClients: ClientData[] = [
-  barlowCars,
-]
+// ── Client registry ───────────────────────────────────────────────────────────
+// Add one import + one entry here when a new client data file is created.
+export const allClients: ClientData[] = []
