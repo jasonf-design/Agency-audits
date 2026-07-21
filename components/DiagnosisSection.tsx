@@ -28,7 +28,7 @@ export default function DiagnosisSection({ data }: DiagnosisSectionProps) {
           03 · Diagnosis
         </div>
         <h2 style={{ fontFamily: 'var(--font-space)', fontWeight: 600, fontSize: 'clamp(26px, 3.4vw, 38px)', maxWidth: 640, marginBottom: 44, letterSpacing: '-0.01em' }}>
-          What's actually slowing the patient down.
+          What's actually holding the website back.
         </h2>
 
         <div ref={ref} className="reveal">
