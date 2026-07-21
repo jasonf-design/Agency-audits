@@ -46,6 +46,12 @@ export interface ServiceItem {
   description: string
 }
 
+export interface AiRecommendation {
+  tool: string
+  impact: 'high' | 'medium' | 'quick-win'
+  why: string
+}
+
 export interface TechStack {
   cms: string | null
   hosting: string | null
@@ -57,9 +63,6 @@ export interface ClientData {
   businessName: string
   url: string
   reportDate: string
-
-  territory: string
-  referredBy: string
 
   heroHeadline: {
     before: string
@@ -94,23 +97,8 @@ export interface ClientData {
 
   services: ServiceItem[]
 
+  aiRecommendations?: AiRecommendation[]
+
   techStack: TechStack
 }
 
-export interface TerritoryData {
-  slug: string
-  name: string
-  repName: string
-  repEmail: string
-  repPhone: string | null
-  introBl: string
-}
-
-export interface AttributionEntry {
-  slug: string
-  businessName: string
-  url: string
-  territory: string
-  referredBy: string
-  dateGenerated: string
-}
