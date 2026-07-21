@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { CoreVital, DiagnosisFinding, TreatmentPhase, PrognosisRow, ServiceItem } from './types'
+import type { CoreVital, DiagnosisFinding, TreatmentPhase, PrognosisRow, ServiceItem, AiRecommendation } from './types'
 import { lighthouseGrade, coreVitalsGrade, securityHeadersGrade, leadCaptureGrade, reputationGrade } from './grading'
 import type { Grade } from './types'
 
@@ -32,7 +32,7 @@ export interface ScrapedSite {
 
 export async function scrapeWebsite(url: string): Promise<ScrapedSite> {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SozeroAuditBot/1.0)' },
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TrabeloAuditBot/1.0)' },
     signal: AbortSignal.timeout(15000),
   })
   const html = await res.text()
@@ -98,17 +98,18 @@ export async function scrapeWebsite(url: string): Promise<ScrapedSite> {
 }
 
 export interface AIGeneratedContent {
-  heroHeadline:      { before: string; emphasis: string }
-  heroSubheading:    string
-  heroMeta:          Array<{ primary: string; secondary: string }>
-  reviewRating:      number | null
-  reviewCount:       number | null
-  lighthouseNotes:   { performance: string; accessibility: string; bestPractices: string; seo: string }
-  diagnosisFindings: DiagnosisFinding[]
-  treatmentPlan:     [TreatmentPhase, TreatmentPhase, TreatmentPhase]
-  prognosisRows:     PrognosisRow[]
-  services:          ServiceItem[]
-  leadCaptureCount:  number
+  heroHeadline:        { before: string; emphasis: string }
+  heroSubheading:      string
+  heroMeta:            Array<{ primary: string; secondary: string }>
+  reviewRating:        number | null
+  reviewCount:         number | null
+  lighthouseNotes:     { performance: string; accessibility: string; bestPractices: string; seo: string }
+  diagnosisFindings:   DiagnosisFinding[]
+  treatmentPlan:       [TreatmentPhase, TreatmentPhase, TreatmentPhase]
+  prognosisRows:       PrognosisRow[]
+  services:            ServiceItem[]
+  aiRecommendations:   AiRecommendation[]
+  leadCaptureCount:    number
   reportCardGrades: {
     performance:     Grade
     coreVitals:      Grade
@@ -154,9 +155,9 @@ export async function generateReportContent(params: {
   const leadGrade = leadCaptureGrade(leadCaptureCount)
   const repGrade  = reviewRating && reviewCount ? reputationGrade(reviewRating, reviewCount) : 'B'
 
-  const prompt = `You are writing a website audit report for a dental practice. Your job is to turn technical data into a compelling, plain-English sales document that a dentist will understand and find valuable. The tone is direct, honest, and specific — not generic marketing fluff.
+  const prompt = `You are writing a website audit report for a business. Your job is to turn technical data into a compelling, plain-English sales document that the business owner will understand and find valuable. The tone is direct, honest, and specific — not generic marketing fluff.
 
-PRACTICE: ${businessName}
+BUSINESS: ${businessName}
 WEBSITE: ${domain}
 
 PAGE TITLE: ${site?.title ?? 'not available'}
@@ -205,10 +206,10 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
     "before": "Two words or a short phrase ending with a full stop and newline. Then 'Website needs ' or similar lead-in.",
     "emphasis": "one or two words in orange — the problem word(s)"
   },
-  "heroSubheading": "2 sentences max. Mention the business name, what we did (ran the website through Google diagnostics), and the key tension (great reputation/presence but the website isn't converting it). If we found reviews, mention the rating and count.",
+  "heroSubheading": "2 sentences max. Mention the business name, what we did (ran the website through Google diagnostics), and the key tension (good reputation/presence but the website isn't converting it). If we found reviews, mention the rating and count.",
   "heroMeta": [
-    { "primary": "full address from structured data or body text if found; if only city/town is inferable use that (e.g. 'Nottingham'); if nothing found use the domain name as a location hint (e.g. 'Leicester' from leicesterdental.co.uk)", "secondary": "Trading since XXXX if found anywhere on the page; if not found use 'Est. locally'" },
-    { "primary": "the most notable credential or specialty found on the site (e.g. 'Invisalign Provider', 'Implant Centre', 'NHS & Private'); if nothing specific found use 'General & Cosmetic Dentistry'", "secondary": "short descriptor e.g. 'Award-winning care' or 'Family & emergency'" },
+    { "primary": "full address from structured data or body text if found; if only city/town is inferable use that; if nothing found use the domain name as a location hint", "secondary": "Trading since XXXX if found anywhere on the page; if not found use 'Est. locally'" },
+    { "primary": "the most notable specialty, credential, or value proposition found on the site (e.g. 'Family-Run Since 1987', 'Award-Winning', 'Same-Day Service'); if nothing specific found infer from the business type and name", "secondary": "short descriptor e.g. 'Award-winning service' or 'Local experts'" },
     { "primary": "${leadCaptureCount} of 3", "secondary": "Booking, chatbot, contact form live" }
   ],
   "lighthouseNotes": {
@@ -221,7 +222,7 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
     {
       "stat": "the key number/value e.g. '${totalPageWeightKb ? (totalPageWeightKb / 1024).toFixed(1) + 'MB' : 'TODO'}'",
       "title": "Short plain-English title",
-      "body": "2–3 sentences explaining the problem and its real-world impact on the practice. No jargon. Speak to the dentist, not a developer."
+      "body": "2–3 sentences explaining the problem and its real-world impact on the business. No jargon. Speak to the business owner, not a developer."
     }
   ],
   "treatmentPlan": [
@@ -248,25 +249,46 @@ Return ONLY a valid JSON object — no markdown, no explanation, just the raw JS
     { "today": "...", "after": "...", "why": "..." }
   ],
   "services": [
-    { "title": "24/7 chatbot", "description": "One sentence tailored to this practice's situation." },
-    { "title": "Lead automation", "description": "One sentence tailored to this practice." },
-    { "title": "Data entry automation", "description": "One sentence tailored to this practice." },
+    { "title": "24/7 chatbot", "description": "One sentence tailored to this business's situation." },
+    { "title": "Lead automation", "description": "One sentence tailored to this business." },
+    { "title": "Data entry automation", "description": "One sentence tailored to this business." },
     { "title": "Image optimisation", "description": "One sentence using the actual page weight number if available." },
     { "title": "Security hardening", "description": "One sentence referencing the specific headers missing." },
-    { "title": "SEO & content", "description": "One sentence on the specific content gaps for this practice." }
+    { "title": "SEO & content", "description": "One sentence on the specific content gaps for this business." }
+  ],
+  "aiRecommendations": [
+    {
+      "tool": "AI Voice Agent",
+      "impact": "high",
+      "why": "One specific sentence about why THIS business needs an AI phone agent — consider their sector, whether they're likely to miss calls, and what enquiries could be handled automatically."
+    }
   ]
 }
 
 Guidelines:
 - NEVER output "TODO:" or placeholder text. This JSON goes directly onto the live report. Every field must be a real, polished sentence or value.
-- Write as if presenting this to the dentist in person. Confident, specific, not salesy.
+- Write as if presenting this to the business owner in person. Confident, specific, not salesy.
 - Use the actual numbers from the data — don't make up scores.
 - diagnosisFindings: write 3–5 findings. Base them on the top opportunities and any obvious issues from the scores. Stat should be the most impactful number.
-- treatmentPlan bullets should be specific to this practice's actual problems, not generic.
+- treatmentPlan bullets should be specific to this business's actual problems, not generic.
 - prognosisRows: 4 rows, each showing a concrete before/after improvement from Phase 1.
 - heroMeta third item: use the actual lead capture count detected (${leadCaptureCount} of 3).
-- If address was not found, use "TODO: address" as primary.
-- If trading-since year is not in the page text, use "TODO: trading since".`
+- If address was not found, use the city/region implied by the domain or business name.
+- If trading-since year is not in the page text, use "Est. locally".
+
+For aiRecommendations:
+- Pick exactly 3–4 AI tools from this list that would benefit this specific business most:
+  * "AI Voice Agent" — handles inbound calls, answers FAQs, captures leads when no one picks up
+  * "AI Web Chat" — captures enquiries on the website 24/7 (especially important if no chat detected)
+  * "Lead Qualification" — automatically scores and routes new enquiries so the team focuses on hot leads
+  * "Appointment Reminders" — automated SMS/WhatsApp reminders to reduce no-shows
+  * "Review Generation" — automatically requests Google reviews after a positive customer interaction
+  * "Follow-up Automation" — re-engages enquiries that didn't convert within 48 hours
+  * "AI Content & SEO" — generates local landing pages and service content at scale
+- Set impact to "high" (biggest ROI or most urgent gap), "quick-win" (can be live within days, immediate result), or "medium" (meaningful but secondary to the high items)
+- The "why" sentence must be specific to THIS business — mention their sector, detected lead capture gaps, call volume likelihood, etc. Never write generic copy.
+- If no live chat was detected and the business relies on enquiries, always include "AI Web Chat" as high or quick-win.
+- If the business type suggests high inbound call volume (car dealerships, estate agents, tradespeople, healthcare), include "AI Voice Agent" as high impact.`
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -281,16 +303,17 @@ Guidelines:
   const parsed = JSON.parse(jsonStr)
 
   return {
-    heroHeadline:      parsed.heroHeadline,
-    heroSubheading:    parsed.heroSubheading,
-    heroMeta:          parsed.heroMeta,
+    heroHeadline:        parsed.heroHeadline,
+    heroSubheading:      parsed.heroSubheading,
+    heroMeta:            parsed.heroMeta,
     reviewRating,
     reviewCount,
-    lighthouseNotes:   parsed.lighthouseNotes,
-    diagnosisFindings: parsed.diagnosisFindings,
-    treatmentPlan:     parsed.treatmentPlan,
-    prognosisRows:     parsed.prognosisRows,
-    services:          parsed.services,
+    lighthouseNotes:     parsed.lighthouseNotes,
+    diagnosisFindings:   parsed.diagnosisFindings,
+    treatmentPlan:       parsed.treatmentPlan,
+    prognosisRows:       parsed.prognosisRows,
+    services:            parsed.services,
+    aiRecommendations:   parsed.aiRecommendations ?? [],
     leadCaptureCount,
     reportCardGrades: {
       performance:    perfGrade,
