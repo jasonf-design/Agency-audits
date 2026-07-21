@@ -1,8 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Usage:
- *   npm run generate -- --url=https://example.com --slug=example-dental \
- *     [--territory="East Midlands"] [--referredBy="James Allen"]
+ *   npm run generate -- --url=https://example.com --slug=example-co
  *
  * Requires PAGESPEED_API_KEY and WHATCMS_API_KEY in .env.local
  */
@@ -11,7 +10,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve, join } from 'path'
 import { config } from 'dotenv'
 import type {
-  CoreVital, VitalStatus, LighthouseScore, TechStack, AttributionEntry,
+  CoreVital, VitalStatus, LighthouseScore, TechStack,
 } from '../lib/types'
 import {
   lighthouseGrade, coreVitalsGrade, securityHeadersGrade,
@@ -26,13 +25,11 @@ function arg(name: string): string | undefined {
   return flag?.split('=').slice(1).join('=')
 }
 
-const url      = arg('url')
-const slug     = arg('slug')
-const territory  = arg('territory') ?? 'direct'
-const referredBy = arg('referredBy') ?? 'direct'
+const url  = arg('url')
+const slug = arg('slug')
 
 if (!url || !slug) {
-  console.error('Usage: npm run generate -- --url=https://example.com --slug=example-dental')
+  console.error('Usage: npm run generate -- --url=https://example.com --slug=example-co')
   process.exit(1)
 }
 
@@ -265,30 +262,11 @@ async function fetchWhatCms(targetUrl: string): Promise<TechStack | null> {
   }
 }
 
-// ── Attribution log ───────────────────────────────────────────────────────────
-
-function appendAttribution(entry: AttributionEntry): void {
-  const logPath = join(ROOT, 'data', 'attribution-log.json')
-  const log: AttributionEntry[] = existsSync(logPath)
-    ? JSON.parse(readFileSync(logPath, 'utf-8'))
-    : []
-
-  // Don't duplicate if the same slug was already logged on the same date
-  const exists = log.some((e) => e.slug === entry.slug && e.dateGenerated === entry.dateGenerated)
-  if (!exists) {
-    log.push(entry)
-    writeFileSync(logPath, JSON.stringify(log, null, 2))
-    console.log(`✓ Attribution logged: ${entry.slug} / ${entry.territory} / ${entry.referredBy}`)
-  }
-}
-
 // ── Output file writer ────────────────────────────────────────────────────────
 
 function buildDataFile(params: {
   slug: string
   url: string
-  territory: string
-  referredBy: string
   reportDate: string
   ps: PageSpeedResult | null
   tech: TechStack | null
@@ -349,9 +327,6 @@ export const data: ClientData = {
   businessName: 'TODO: Business name',
   url: '${params.url}',
   reportDate: '${params.reportDate}',
-
-  territory: '${params.territory}',
-  referredBy: '${params.referredBy}',
 
   heroHeadline: {
     before:   'TODO: Headline before emphasis. ',
@@ -416,12 +391,12 @@ ${vitalsLines}
   ],
 
   services: [
-    { title: '24/7 chatbot',         description: 'TODO: tailor to this practice.' },
-    { title: 'Lead automation',      description: 'TODO: tailor to this practice.' },
-    { title: 'Data entry automation',description: 'TODO: tailor to this practice.' },
-    { title: 'Image optimisation',   description: 'TODO: tailor to this practice.' },
-    { title: 'Security hardening',   description: 'TODO: tailor to this practice.' },
-    { title: 'SEO & content',        description: 'TODO: tailor to this practice.' },
+    { title: '24/7 chatbot',         description: 'TODO: tailor to this business.' },
+    { title: 'Lead automation',      description: 'TODO: tailor to this business.' },
+    { title: 'Data entry automation',description: 'TODO: tailor to this business.' },
+    { title: 'Image optimisation',   description: 'TODO: tailor to this business.' },
+    { title: 'Security hardening',   description: 'TODO: tailor to this business.' },
+    { title: 'SEO & content',        description: 'TODO: tailor to this business.' },
   ],
 
   techStack: {
@@ -461,15 +436,12 @@ async function main() {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   if (existsSync(filePath)) {
     console.warn(`⚠  clients/${slug}/data.ts already exists — writing to clients/${slug}/data.ts.new instead`)
-    writeFileSync(filePath + '.new', buildDataFile({ slug: slug!, url: url!, territory, referredBy, reportDate, ps, tech, secHeaders }))
+    writeFileSync(filePath + '.new', buildDataFile({ slug: slug!, url: url!, reportDate, ps, tech, secHeaders }))
     console.log(`✓ Wrote clients/${slug}/data.ts.new`)
   } else {
-    writeFileSync(filePath, buildDataFile({ slug: slug!, url: url!, territory, referredBy, reportDate, ps, tech, secHeaders }))
+    writeFileSync(filePath, buildDataFile({ slug: slug!, url: url!, reportDate, ps, tech, secHeaders }))
     console.log(`✓ Wrote clients/${slug}/data.ts`)
   }
-
-  // Attribution log
-  appendAttribution({ slug: slug!, businessName: 'TODO', url: url!, territory, referredBy, dateGenerated: reportDate })
 
   // Summary
   const manualTodos = [
